@@ -15,6 +15,8 @@ orderly_dependency("process_benin", "latest", "benin_facility_survey_clinical.rd
 benin_dco <- readRDS("benin_dco.rds")
 benin_hf <- readRDS("benin_facility_survey_clinical.rds")
 
+#### EDA DCO
+
 outfile_prefix <- "benin_consult_length_by"
 
 
@@ -49,27 +51,6 @@ p2$main.plot <- p2$main.plot +
 
 ggsave_manuscript(glue("{outfile_prefix}_milieu"), p2, 9, 6)
 
-########### by facility
-benin_dco$m_id1 <- factor(benin_dco$m_id1)
-## Retain facilities with at least 10 consultations
-facility_counts <- count(benin_dco, m_id1)
-morethan10 <- facility_counts$n >= 10
-benin_subset <- benin_dco[benin_dco$m_id1 %in% facility_counts$m_id1[morethan10], ]
-
-p3 <- ggsummarystats(
-  data = benin_subset, x = "m_id1", y = "consult_length",
-  ggfunc = ggboxplot, add = "jitter"
-)
-
-p3$main.plot <- p3$main.plot +
-  stat_compare_means(
-    label = "p.signif", ref.group = ".all.", label.y.npc = 0.75
-  ) +
-  ylab("Consultation length (minutes)") +
-  theme_manuscript() +
-  xlab("Facility Id")
-
-ggsave_manuscript(glue("{outfile_prefix}_facility"), p3, 9, 6)
 
 ########### by health zones
 benin_dco$m_id2 <- factor(benin_dco$m_id2)
@@ -288,4 +269,64 @@ psteps <- ggplot(nsteps) +
 
 ggsave_manuscript("steps_proportion", psteps)
 
+########### by facility
+benin_dco$m_id1 <- factor(benin_dco$m_id1)
+## Retain facilities with at least 30 consultations
+facility_counts <- count(benin_dco, m_id1)
+morethan10 <- facility_counts$n >= 30
+benin_subset <- benin_dco[benin_dco$m_id1 %in% facility_counts$m_id1[morethan10], ]
 
+p3 <- ggsummarystats(
+  data = benin_subset, x = "m_id1", y = "consult_length",
+  ggfunc = ggboxplot, add = "jitter"
+)
+
+p3$main.plot <- p3$main.plot +
+  stat_compare_means(
+    label = "p.signif", ref.group = ".all.", label.y.npc = 0.75
+  ) +
+  ylab("Consultation length (minutes)") +
+  theme_manuscript() +
+  xlab("Facility Id")
+
+ggsave_manuscript(glue("{outfile_prefix}_facility"), p3, 9, 6)
+
+########### by facility
+benin_dco$m_id1 <- factor(benin_dco$m_id1)
+## Retain facilities with at least 30 consultations
+facility_counts <- count(benin_dco, m_id1)
+morethan10 <- facility_counts$n >= 30
+benin_subset <- benin_dco[benin_dco$m_id1 %in% facility_counts$m_id1[morethan10], ]
+
+p3 <- ggsummarystats(
+  data = benin_subset, x = "m_id1", y = "consult_length",
+  ggfunc = ggboxplot, add = "jitter"
+)
+
+p3$main.plot <- p3$main.plot +
+  stat_compare_means(
+    label = "p.signif", ref.group = ".all.", label.y.npc = 0.75
+  ) +
+  ylab("Consultation length (minutes)") +
+  theme_manuscript() +
+  xlab("Facility Id")
+
+ggsave_manuscript(glue("{outfile_prefix}_facility"), p3, 9, 6)
+
+## Explore the characteristics of the facilities
+##benin_hf <- benin_hf[benin_hf$f_id1 %in% facility_counts$m_id1[morethan10], ]
+benin_hf$f_id1 <- factor(benin_hf$f_id1)
+benin_subset <- left_join(benin_dco, benin_hf, by = c("m_id1" = "f_id1"))
+
+p3 <- ggsummarystats(
+  data = benin_subset, x = "number_csec_trained_personnel", y = "consult_length",
+  ggfunc = ggboxplot, add = "jitter"
+)
+
+p3$main.plot <- p3$main.plot +
+  stat_compare_means(
+    label = "p.signif", comparisons = list(c(1, 2), c(1, 3), c(2, 3)), label.y.npc = 0.75
+  ) +
+  ylab("Consultation length (minutes)") +
+  theme_manuscript() +
+  xlab("Do women in labour pay for equipment?")

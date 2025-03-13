@@ -126,12 +126,22 @@ orderly_artefact(
 infile <- "benhrbf2_f.dta"
 benin_hfds <- orderly_shared_resource(benin_hfds.dta = paste0(indir, infile))
 facility_survey_cl <- read.dta("benin_hfds.dta")
+
+## These codes are used when information is not available
+facility_survey_cl <- mutate(
+  facility_survey_cl,
+  across(
+    everything(),
+    ~ ifelse(. %in% c(888, 999, 88888, 88888888, 99999999, 88889999), NA, .)
+  )
+)
+
 facility_survey_cl <- rename(
   facility_survey_cl,
-  catchment_population = f1_1,
-  catchment_population_female_15_49 = f1_2,
-  catchment_population_under_1 = f1_3,
-  catchment_population_under_5 = f1_4,
+  catchment_pop = f1_1,
+  catchment_pop_female_15_49 = f1_2,
+  catchment_pop_under_1 = f1_3,
+  catchment_pop_under_5 = f1_4,
   total_attendance_2009 = f1_5,
   new_patients_2009 = f1_6,
   new_female_patients_2009 = f1_7,
@@ -231,8 +241,58 @@ facility_survey_cl <- rename(
   women_in_labour_pay = f3_51
 )
 
+
+cols_to_bin <- c(
+  "catchment_pop", "catchment_pop_female_15_49", "catchment_pop_under_1",
+  "catchment_pop_under_5"
+)
+
+bins <- unique(
+  c(
+    seq(0, 10000, by = 500), seq(10000, 15000, by = 1000),
+    seq(15000, 50000, by = 5000),
+    Inf
+  )
+)
+
+facility_survey_cl <- mutate(
+  facility_survey_cl,
+  across(
+    all_of(cols_to_bin),
+    list(binned = ~ cut(., breaks = bins, dig.lab = 5, ordered_result = TRUE)),
+    .names = "{.col}_binned"
+  )
+)
+
+
+cols_to_bin <- c(
+  "total_attendance_2009", "new_patients_2009",
+  "new_female_patients_2009", "new_pregrant_patients_2009",
+  "new_patients_under_5_2009", "anc_visits_2009"
+)
+
+bins <- unique(
+  c(
+    seq(0, 1000, by = 100), seq(1000, 10000, by = 2000), Inf
+  )
+)
+
+facility_survey_cl <- mutate(
+  facility_survey_cl,
+  across(
+    all_of(cols_to_bin),
+    list(binned = ~ cut(., breaks = bins, dig.lab = 5, ordered_result = TRUE)),
+    .names = "{.col}_binned"
+  )
+)
+
+
 saveRDS(facility_survey_cl, "benin_facility_survey_clinical.rds")
 orderly_artefact(
   files = "benin_facility_survey_clinical.rds",
   description = "Benin facility survey clinical survey"
 )
+
+
+
+
