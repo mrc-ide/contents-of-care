@@ -180,3 +180,8 @@ archive
 .python-version
 shared
 .Rhistory
+*.dta
+*.rds
+*.pdf
+*.png
+*.svg
