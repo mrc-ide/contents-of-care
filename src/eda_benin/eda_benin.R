@@ -70,9 +70,6 @@ p3$main.plot <- p3$main.plot +
 ggsave_manuscript(glue("{outfile_prefix}_healthzone"), p3, 9, 6)
 
 ########### by first ANC
-
-
-
 benin_dco$first_anc <- factor(benin_dco$first_anc)
 
 p4 <- ggsummarystats(
@@ -295,12 +292,27 @@ ggsave_manuscript(glue("{outfile_prefix}_facility"), p3, 9, 6)
 benin_dco$m_id1 <- factor(benin_dco$m_id1)
 ## Retain facilities with at least 30 consultations
 facility_counts <- count(benin_dco, m_id1)
-morethan10 <- facility_counts$n >= 30
-benin_subset <- benin_dco[benin_dco$m_id1 %in% facility_counts$m_id1[morethan10], ]
 
 p3 <- ggsummarystats(
-  data = benin_subset, x = "m_id1", y = "consult_length",
+  data = benin_dco, x = "m_id1", y = "consult_length",
   ggfunc = ggboxplot, add = "jitter"
+)
+
+ggsave_manuscript(glue("{outfile_prefix}_facility_all"), p3, 9, 6)
+
+morethanx <- facility_counts$n >= 10
+benin_hf$f_id1 <- factor(benin_hf$f_id1)
+benin_subset <- left_join(benin_dco, benin_hf, by = c("m_id1" = "f_id1"))
+x <- benin_subset[benin_subset$m_id1 %in% facility_counts$m_id1[morethanx], ]
+y <- group_by(x, m_id1) |>
+  summarise(med = median(consult_length)) |>
+  arrange(med)
+
+x$m_id1 <- factor(x$m_id1, levels = y$m_id1, ordered = TRUE)
+
+p3 <- ggsummarystats(
+  data = x, x = "m_id1", y = "consult_length",
+  ggfunc = ggboxplot, add = "jitter", color = "catchment_pop_binned"
 )
 
 p3$main.plot <- p3$main.plot +
@@ -313,10 +325,21 @@ p3$main.plot <- p3$main.plot +
 
 ggsave_manuscript(glue("{outfile_prefix}_facility"), p3, 9, 6)
 
+
+p3 <- ggsummarystats(
+  data = x, x = "catchment_pop_binned", y = "consult_length",
+  ggfunc = ggboxplot, add = "jitter"
+)
+
+p3$main.plot <- p3$main.plot +
+  ylab("Consultation length (minutes)") +
+  theme_manuscript() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+  
+
+
 ## Explore the characteristics of the facilities
 ##benin_hf <- benin_hf[benin_hf$f_id1 %in% facility_counts$m_id1[morethan10], ]
-benin_hf$f_id1 <- factor(benin_hf$f_id1)
-benin_subset <- left_join(benin_dco, benin_hf, by = c("m_id1" = "f_id1"))
 
 p3 <- ggsummarystats(
   data = benin_subset, x = "number_csec_trained_personnel", y = "consult_length",

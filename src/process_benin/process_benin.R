@@ -2,6 +2,7 @@ library(dplyr)
 library(foreign)
 library(lubridate)
 library(orderly2)
+library(tidyr)
 ## Data dictionary available at
 ## https://microdata.worldbank.org/index.php/catalog/2176/data-dictionary
 
@@ -115,11 +116,6 @@ benin$consult_length <- time_length(end - start, unit = "minute")
 benin <- mutate(benin, across(first_anc:sp_ensured3, recode_oui_non))
 ## benin <- rowwise(benin) |> mutate(nsteps = sum(c_across(m0_03:m3_6), na.rm = TRUE))
 
-saveRDS(benin, "benin_dco.rds")
-orderly_artefact(
-  files = "benin_dco.rds",
-  description = "Benin direct clinical observations survey"
-)
 
 ## Process Health facility survey (part 2: clinical aspects)
 ## https://microdata.worldbank.org/index.php/catalog/2176/data-dictionary/F29?file_name=benhrbf2_f
@@ -249,8 +245,8 @@ cols_to_bin <- c(
 
 bins <- unique(
   c(
-    seq(0, 10000, by = 500), seq(10000, 15000, by = 1000),
-    seq(15000, 50000, by = 5000),
+    seq(0, 1000, by = 500), seq(1000, 15000, by = 5000),
+    seq(15000, 50000, by = 10000),
     Inf
   )
 )
@@ -293,6 +289,126 @@ orderly_artefact(
   description = "Benin facility survey clinical survey"
 )
 
+## Administrative and financial aspects of the health facility
+infile <- "benhrbf2_e.dta"
+orderly_shared_resource(benin_hf_admin.dta = paste0(indir, infile))
+## convert.factors = FALSE is used to avoid converting factors to underlying codes
+## so we don't run into encoding issues
+facility_survey_admin <- read.dta("benin_hf_admin.dta", convert.factors = FALSE)
+facility_survey_admin$facility_type <- case_when(
+  facility_survey_admin$e1_1 == 1 ~ "National Hospital",
+  facility_survey_admin$e1_1 == 2 ~ "Departmental Hospital",
+  facility_survey_admin$e1_1 == 3 ~ "Zone Hospital",
+  facility_survey_admin$e1_1 == 4 ~ "Former Communal Health Center",
+  facility_survey_admin$e1_1 == 5 ~ "Former District Health Center",
+  facility_survey_admin$e1_1 == 6 ~ "Standalone maternity unit",
+  facility_survey_admin$e1_1 == 7 ~ "Standalone dispensary",
+  facility_survey_admin$e1_1 == 8 ~ "Clinic/Polyclinic",
+  facility_survey_admin$e1_1 == 9 ~ "Medical office (or private doctor's office)",
+  facility_survey_admin$e1_1 == 10 ~ "Birthing clinic",
+  facility_survey_admin$e1_1 == 11 ~ "Faith-based private facility",
+  TRUE ~ NA_character_
+)
+
+facility_survey_admin$facility_status <- case_when(
+  facility_survey_admin$e1_2 == 1 ~ "Public",
+  facility_survey_admin$e1_2 == 2 ~ "Semi-public",
+  facility_survey_admin$e1_2 == 3 ~ "Private",
+  facility_survey_admin$e1_2 == 4 ~ "NGO",
+  facility_survey_admin$e1_2 == 5 ~ "Religious",
+  facility_survey_admin$e1_2 == 96 ~ "Other",
+  TRUE ~ NA_character_
+)
+
+saveRDS(facility_survey_admin, "benin_facility_survey_admin.rds")
+orderly_artefact(
+  files = "benin_facility_survey_admin.rds",
+  description = "Benin facility survey administrative and financial aspects"
+)
 
 
 
+## Health worker surveys: unannounced visits
+infile <- "benhrbf2_g1.dta"
+orderly_shared_resource(benin_hw_unannounced.dta = paste0(indir, infile))
+hw_unannounced <- read.dta("benin_hw_unannounced.dta")
+## g0_01 codes the number of visit i.e. whether this is the first, or the second
+## visit
+## For some facilities, the numbers between the first and second visit are very
+## different.
+## hw_count <- count(hw_unannounced, g_id1, g0_01)
+## x <- tidyr::spread(hw_count, g0_01, n)
+## filter(x, `1` != `2`)
+##    g_id1   1   2
+## 1     12  22  23
+## 2     66 900   2
+## 3     76  17 900
+## 4     82 900   4
+## 5    103 900  12
+## 6    114 900   9
+## 7    117   9 900
+## 8    120 900   8
+## 9    125   6 900
+## 10   131 900   6
+## 11   145 900   6
+## 12   158 900   9
+## 13   194   5 900
+## The dataset has 41833 rows but the vast majority of them are missing data
+## 37157 rows have NAs in key columns which are g1_15 (no), and g1_20 (present)
+## We will therefore exlcude rows where no is missing.
+hw_unannounced <- filter(hw_unannounced, !is.na(g1_15))
+## If we now repeat the above check, we find that there is only one facility
+## where the number of health workers is different between the first and second
+## visits and the difference is only 1 (22/23).
+
+hw_unannounced$hw_role <- case_when(
+  hw_unannounced$g1_19 == 1 ~ "obstetrician-gynecologist ",
+  hw_unannounced$g1_19 == 2 ~ "surgeon",
+  hw_unannounced$g1_19 == 3 ~ "pediatrician",
+  hw_unannounced$g1_19 == 4 ~ "GP",
+  hw_unannounced$g1_19 == 5 ~ "head midwife/senior midwife",
+  hw_unannounced$g1_19 == 6 ~ "midwife",
+  hw_unannounced$g1_19 == 7 ~ "head nurse/unit head/nursing supervisor",
+  hw_unannounced$g1_19 == 8 ~ "nurse",
+  hw_unannounced$g1_19 == 9 ~ "biological engineer",
+  hw_unannounced$g1_19 == 10 ~ "laboratory technician A",
+  hw_unannounced$g1_19 == 11 ~ "laboratory technician B",
+  hw_unannounced$g1_19 == 12 ~ "Medical Imaging Engineer",
+  hw_unannounced$g1_19 == 13 ~ "Medical Imaging technicina A",
+  hw_unannounced$g1_19 == 14 ~ "Medical Imaging technicina B",
+  hw_unannounced$g1_19 == 15 ~ "tahb",
+  hw_unannounced$g1_19 == 16 ~ "caregiver",
+  hw_unannounced$g1_19 == 17 ~ "administrator",
+  hw_unannounced$g1_19 == 96 ~ "other",
+  TRUE ~ NA_character_
+)
+
+## surveyor is expected to list every single hcw in the facility
+## so counting by id should give the number of hcws. We will only use one visit
+## as the numbers are the same between the two visits
+hw_count <- filter(hw_unannounced, g0_01 == 1) |>
+  count(g_id1, hw_role) 
+  
+saveRDS(hw_unannounced, "benin_hw_count.rds")
+
+## Put everything together
+benin_hf_info <- left_join(
+  facility_survey_cl,
+  facility_survey_admin,
+  by = c("f_id1" = "e_id1")
+) |> left_join(hw_count, by = "g_id1")
+
+saveRDS(benin_hf_info, "benin_hf_info.rds")
+orderly_artefact(
+  files = "benin_hf_info.rds",
+  description = "Benin health facility information"
+)
+
+## And connect with DCO so that we don't have to do this again
+benin_dco <- left_join(benin, benin_hf_info, by = c("m_id1" = "f_id1"))
+
+saveRDS(benin_dco, "benin_dco.rds")
+orderly_artefact(
+  files = "benin_dco.rds",
+  description = "Benin direct clinical observations survey"
+)
