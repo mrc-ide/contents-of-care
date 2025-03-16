@@ -391,12 +391,14 @@ hw_count <- filter(hw_unannounced, g0_01 == 1) |>
   
 saveRDS(hw_unannounced, "benin_hw_count.rds")
 
+## Aggregate across roles
+hw_count <- count(hw_unannounced, g_id1, name = "n_hcw")
 ## Put everything together
 benin_hf_info <- left_join(
   facility_survey_cl,
   facility_survey_admin,
   by = c("f_id1" = "e_id1")
-) |> left_join(hw_count, by = "g_id1")
+) |> left_join(hw_count, by = c("f_id1" = "g_id1"))
 
 saveRDS(benin_hf_info, "benin_hf_info.rds")
 orderly_artefact(
