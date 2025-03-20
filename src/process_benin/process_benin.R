@@ -408,9 +408,10 @@ hw_count <- filter(hw_unannounced, g0_01 == 1) |>
   count(g_id1, hw_category) 
   
 saveRDS(hw_unannounced, "benin_hw_count.rds")
-
-## Aggregate across roles; 
-hw_count <- count(hw_unannounced, g_id1, name = "n_staff")
+orderly_artefact(
+  files = "benin_hw_count.rds",
+  description = "Benin health worker survey"
+)
 
 ## Sanity check: WHO gives the ratio of doctors and nursing and midwifery
 ## personnel per 10,000 population. We can do a quick comparison to see if
@@ -419,7 +420,9 @@ hw_count <- count(hw_unannounced, g_id1, name = "n_staff")
 
 x <- filter(
   hw_count, hw_category %in% c("doctor", "nurse", "midwife", "pharmacist")
-) |> spread(hw_category, n)
+)
+
+x <- spread(x, hw_category, n)
 
 x$nursing_and_midwifery <- rowSums(cbind(x$nurse, x$midwife), na.rm = TRUE)
 
@@ -434,6 +437,12 @@ z$nursing_and_midwifery_per_10000 <-
 ## Sense checked the numbers; they roughly make sense, except for facilities
 ## with very small catchment populations. As these are not used in DCOs, I am
 ## sort of okay with the data.
+
+
+
+## Aggregate across roles;
+hw_count <- count(hw_unannounced, g_id1, name = "n_staff")
+
 
 ## Put everything together
 benin_hf_info <- left_join(
