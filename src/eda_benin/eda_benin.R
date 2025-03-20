@@ -10,6 +10,9 @@ library(purrr)
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
+orderly_dependency("process_benin", "latest", "benin_hf_info.rds")
+benin_hf_info <- readRDS("benin_hf_info.rds")
+
 orderly_dependency("process_benin", "latest", "benin_dco.rds")
 benin_dco <- readRDS("benin_dco.rds")
 
@@ -218,6 +221,50 @@ p3$main.plot <- p3$main.plot +
   theme_pubr() +
   ylab("Consultation length (minutes)") +
   xlab("Do pregnant women have private space?")
+
+##### number_of_maternal_deaths
+benin_dco$number_of_maternal_deaths <- factor(benin_dco$number_of_maternal_deaths)
+
+p3 <- ggsummarystats(
+  data = benin_dco, x = "number_of_maternal_deaths", y = "consult_length",
+  ggfunc = ggboxplot, add = "jitter"
+)
+
+p3$main.plot <- p3$main.plot +
+  stat_compare_means(
+    label = "p.signif", label.y.npc = 0.75, ref.group = ".all."
+  ) +
+  ylab("Consultation length (minutes)") +
+  theme_pubr() +
+  xlab("Number of maternal deaths")
+
+outfile <- glue("{outfile_prefix}_maternal_deaths.pdf")
+ggexport(plotlist = list(p3), filename = outfile)
+orderly_artefact(
+  description = "Consultation length by number of maternal deaths",
+  files = outfile
+)
+
+##### number_of_births_2009
+benin_dco$number_of_births_2009 <- factor(benin_dco$number_of_births_2009)
+p3 <- ggsummarystats(
+  data = benin_dco, x = "number_of_births_2009", y = "consult_length",
+  ggfunc = ggboxplot, add = "jitter"
+)
+p3$main.plot <- p3$main.plot +
+  stat_compare_means(
+    label = "p.signif", label.y.npc = 0.75, ref.group = ".all."
+  ) +
+  ylab("Consultation length (minutes)") +
+  theme_pubr() +
+  xlab("Number of births in 2009")
+
+outfile <- glue("{outfile_prefix}_births_2009.pdf")
+ggexport(plotlist = list(p3), filename = outfile)
+orderly_artefact(
+  description = "Consultation length by number of births in 2009",
+  files = outfile
+)
 
 ########### by first ANC
 benin_dco$first_anc <- factor(benin_dco$first_anc)

@@ -360,6 +360,20 @@ hw_unannounced <- filter(hw_unannounced, !is.na(g1_15))
 ## If we now repeat the above check, we find that there is only one facility
 ## where the number of health workers is different between the first and second
 ## visits and the difference is only 1 (22/23).
+hw_unannounced$hw_category <- case_when(
+  hw_unannounced$g1_18 == 1 ~ "doctor",
+  hw_unannounced$g1_18 == 2 ~ "nurse",
+  hw_unannounced$g1_18 == 3 ~ "midwife",
+  hw_unannounced$g1_18 == 4 ~ "biologist",
+  hw_unannounced$g1_18 == 5 ~ "pharmacist",
+  hw_unannounced$g1_18 == 6 ~ "medical imaging",
+  hw_unannounced$g1_18 == 7 ~ "administration",
+  hw_unannounced$g1_18 == 8 ~ "caregiver",
+  hw_unannounced$g1_18 == 9 ~ "hygiene and sanitation agent",
+  hw_unannounced$g1_18 == 96 ~ "other",
+  hw_unannounced$g1_18 == 96 &
+    hw_unannounced$g1_18_w %in% "COMMIS" ~ "clerk"
+)
 
 hw_unannounced$hw_role <- case_when(
   hw_unannounced$g1_19 == 1 ~ "obstetrician-gynecologist ",
@@ -380,6 +394,10 @@ hw_unannounced$hw_role <- case_when(
   hw_unannounced$g1_19 == 16 ~ "caregiver",
   hw_unannounced$g1_19 == 17 ~ "administrator",
   hw_unannounced$g1_19 == 96 ~ "other",
+  hw_unannounced$g1_19 == 96 &
+    hw_unannounced$g1_19_w %in% "COMMIS PHARMACIE" ~ "pharmacy clerk",
+  hw_unannounced$g1_19 == 96 &
+    hw_unannounced$g1_19_w %in% "COMMIS" ~ "clerk",
   TRUE ~ NA_character_
 )
 
@@ -387,12 +405,36 @@ hw_unannounced$hw_role <- case_when(
 ## so counting by id should give the number of hcws. We will only use one visit
 ## as the numbers are the same between the two visits
 hw_count <- filter(hw_unannounced, g0_01 == 1) |>
-  count(g_id1, hw_role) 
+  count(g_id1, hw_category) 
   
 saveRDS(hw_unannounced, "benin_hw_count.rds")
 
-## Aggregate across roles
-hw_count <- count(hw_unannounced, g_id1, name = "n_hcw")
+## Aggregate across roles; 
+hw_count <- count(hw_unannounced, g_id1, name = "n_staff")
+
+## Sanity check: WHO gives the ratio of doctors and nursing and midwifery
+## personnel per 10,000 population. We can do a quick comparison to see if
+## the numbers make sense
+## https://apps.who.int/gho/data/node.main-afro.UHCHRH?lang=en
+
+x <- filter(
+  hw_count, hw_category %in% c("doctor", "nurse", "midwife", "pharmacist")
+) |> spread(hw_category, n)
+
+x$nursing_and_midwifery <- rowSums(cbind(x$nurse, x$midwife), na.rm = TRUE)
+
+y <- select(facility_survey_cl, f_id1, catchment_pop, catchment_pop_binned)
+## 11 rows where catchment_pop is missing, and one where it is 0
+## We will exclude these rows
+y <- filter(y, !is.na(catchment_pop) & catchment_pop > 0)
+z <- left_join(x, y, by = c("g_id1" = "f_id1"))
+z$doctors_per_10000 <- (z$doctor / z$catchment_pop) * 10000
+z$nursing_and_midwifery_per_10000 <-
+  (z$nursing_and_midwifery / z$catchment_pop) * 10000
+## Sense checked the numbers; they roughly make sense, except for facilities
+## with very small catchment populations. As these are not used in DCOs, I am
+## sort of okay with the data.
+
 ## Put everything together
 benin_hf_info <- left_join(
   facility_survey_cl,
