@@ -10,8 +10,6 @@ library(purrr)
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
-orderly_dependency("process_benin", "latest", "benin_hf_info.rds")
-benin_hf_info <- readRDS("benin_hf_info.rds")
 
 orderly_dependency("process_benin", "latest", "benin_dco.rds")
 benin_dco <- readRDS("benin_dco.rds")
@@ -383,13 +381,11 @@ second_trimester_steps$names <- factor(
 
 third_trimester <- filter(benin_dco, trimester %in% "troisieme trimestre") |>
   select(
-    consult_length, hour_start:info_embolism, uterus_measured3:sp_ensured
+    consult_length, hour_start:info_embolism, uterus_measured3:sp_ensured3
   )
 
 
-third_trimester_steps <- select(
-  third_trimester, weight:sp_ensured
-) |>
+third_trimester_steps <- select(third_trimester, weight:sp_ensured3) |>
   colSums(na.rm = TRUE) |>
   tidy()
 
@@ -478,21 +474,4 @@ psteps <- ggplot(nsteps) +
   theme_pubr()
 
 ggsave_manuscript("steps_proportion", psteps)
-
-
-
-p3 <- ggsummarystats(
-  data = x, x = "catchment_pop_binned", y = "consult_length",
-  ggfunc = ggboxplot, add = "jitter"
-)
-
-p3$main.plot <- p3$main.plot +
-  ylab("Consultation length (minutes)") +
-  theme_pubr() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-  
-
-
-## Explore the characteristics of the facilities
-##benin_hf <- benin_hf[benin_hf$f_id1 %in% facility_counts$m_id1[morethan10], ]
 

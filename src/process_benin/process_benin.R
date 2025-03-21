@@ -164,7 +164,7 @@ facility_survey_cl <- rename(
   sp_administration = f3_5j,
   ultrasound = f3_5k,
   ## Procedures performed during the first trimester or first prenatal visit
-  patients_age = f3_6a,
+  patients_age_rec = f3_6a,
   patients_height2 = f3_6b,
   patients_weight2 = f3_6c,
   inspection2 = f3_6d,
@@ -458,7 +458,9 @@ orderly_artefact(
 )
 
 ## And connect with DCO so that we don't have to do this again
-benin_dco <- left_join(benin, benin_hf_info, by = c("m_id1" = "f_id1"))
+benin_dco <- left_join(
+  benin, benin_hf_info, by = c("m_id1" = "f_id1"), suffix = c("", "_hf_survey")
+)
 
 saveRDS(benin_dco, "benin_dco.rds")
 orderly_artefact(
