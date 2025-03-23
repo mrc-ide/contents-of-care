@@ -263,6 +263,33 @@ orderly_artefact(
   description = "Consultation length by number of births in 2009",
   files = outfile
 )
+########### by number of staff
+benin_dco$n_staff_binned <- cut(
+  benin_dco$n_staff,
+  breaks = c(0, 30, 60, 90, Inf), ordered_result = TRUE
+)
+
+p <- ggsummarystats(
+  data = benin_dco, x = "n_staff_binned", y = "consult_length",
+  ggfunc = ggboxplot, add = "jitter"
+)
+
+p$main.plot <- p$main.plot +
+  stat_compare_means(
+    label = "p.signif", label.y.npc = 0.75,
+    comparisons = list(
+      c(1, 2), c(1, 3), c(1, 4),
+      c(2, 3), c(2, 4), c(3, 4)
+    )
+  ) +
+  ylab("Consultation length (minutes)") +
+  theme_pubr() +
+  xlab("Number of staff")
+
+ggexport(plotlist = list(p), filename = glue("{outfile_prefix}_staff.pdf"))
+orderly_artefact(
+  description = "Consultation length by number of staff", files = outfile
+)
 
 ########### by first ANC
 benin_dco$first_anc <- factor(benin_dco$first_anc)
