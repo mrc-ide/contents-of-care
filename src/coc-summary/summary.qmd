@@ -35,17 +35,6 @@ citation-location: margin         # <2>
 ---
 ```
 
-1.  Increases the width of the margin to make more room for sidenotes and margin figures (HTML only).
-2.  Places footnotes and cited sources in the margin. Other layout options (for example placing a figure in the margin) will be set per element in examples below.
-
-These layout features are designed with two important goals in mind:
-
-1.  To produce both PDF and HTML output with similar styles from the same Quarto document;
-2.  To provide simple syntax to write elements of the Tufte style such as side notes and margin figures. If you'd like a figure placed in the margin, just set the option `fig-column: margin` for your code chunk, and we will take care of the details for you[^2].
-
-[^2]: You never need to think about `\begin{marginfigure}` or `<span class="marginfigure">`; the LaTeX and HTML code under the hood may be complicated, but you never need to learn or write such code.
-
-If you have any feature requests or find bugs in these capabilities, please do not hesitate to file them to <https://github.com/quarto-dev/quarto-cli/issues>.
 
 # Benin
 
@@ -53,9 +42,30 @@ If you have any feature requests or find bugs in these capabilities, please do n
 
 ![ Consultation lengths vary by facililty](benin_consult_length_by_facility.png){#fig-ben-by-hf}
 
+# Identify determinants of the length of consultation
+
+We used regression analyses to identify determinants of the length of an ANC consultation in Benin. We started with a full model that incorportated
+attributes of the health facility, patient, healthcare worker, and the appointment.
+
+* log-transformed the consultation length
+* The initial model specification used:
+** rural/urban location of the health-facility
+** healthzone
+** number of staff
+** catchment population
+** total attendance in 2009
+** whether pregnant women have private space
+** number of maternal deaths in the last 12 months
+** whether women in labour pay for the equipment
+** healthcare worker qualification
+** whether this was patient's first ANC
+** trimester of pregnancy
+** hour at which consultation began
+
+The model is fitted to 311 rows, which contain information on all variables.
+That is, 390 rows are excluded.
 
 
-Images and graphics play an integral role in Tufte's work. To place figures in the margin you can use the **Quarto** chunk option `column: margin`. For example:
 
 ```{r}
 #| label: fig-margin

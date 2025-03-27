@@ -462,6 +462,11 @@ benin_dco <- left_join(
   benin, benin_hf_info, by = c("m_id1" = "f_id1"), suffix = c("", "_hf_survey")
 )
 
+benin_dco <- left_join(
+  benin_dco, z,
+  by = c("m_id1" = "g_id1"), suffix = c("", "_hw_survey")
+)
+
 saveRDS(benin_dco, "benin_dco.rds")
 orderly_artefact(
   files = "benin_dco.rds",
