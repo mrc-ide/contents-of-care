@@ -17,7 +17,7 @@ source("utils.R")
 indir <- "resources/benin/BEN_2010_HRBF_v01_M_v01_A_PUF_Stata8/"
 infile <- "benhrbf2_m.dta" 
 orderly_shared_resource(benin.dta = paste0(indir, infile))
-benin <- read.dta("benin.dta", convert.factors = FALSE)
+benin <- read.dta("benin.dta")
 
 
 ## m0_03 to m3_6 describe the individual steps in the examnination
@@ -107,10 +107,10 @@ benin <- rename(
 
 ## Answers to pregnancy_stage are at most 36 weeks, and more than 36 weeks
 benin <- relocate(benin, pregnancy_stage, .after = sp_ensured3)
-
+start_of_day <- hm("08:00")
 start <- hm(paste(benin$hour_start, benin$min_start, sep = ":"))
 end <- hm(paste(benin$hour_end, benin$min_end, sep = ":"))
-
+benin$time_elapsed_since_start_of_day <- time_length(start - start_of_day, unit = "minute")
 benin$consult_length <- time_length(end - start, unit = "minute")
 
 

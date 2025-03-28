@@ -6,44 +6,39 @@ library(orderly2)
 library(purrr)
 library(rsample)
 library(tibble)
+library(tidylog)
 library(tidyr)
 
-boot_lasso <- function(df, best_lambda) {
-  
-  x_boot <- model.matrix(log_consult_length ~ (
-    n_staff + catchment_pop_centered + m0_milieu + m_id2 +
-      total_attendance_2009 +
-      pregnant_women_private_space + number_of_maternal_deaths +
+
+
+full_model <- function(df) {
+  x_matrix <- model.matrix(consult_length ~ (
+    doctor_or_nursing_and_midwifery_per_10000 + m0_milieu + m_id2 +
       women_in_labour_pay +
       ## HCW characteristics
-      m0_id8 +
+      factor(m0_id8) +
       ## Patient characteristics
       trimester +
       ## Appointment characteristics
-      hour_start), data = df)[, -1]
-  y_boot <- df_boot$log_consult_length
+      time_elapsed_since_start_of_day), data = df)[, -1]
 
-  # Fit LASSO using fixed lambda from original CV
-  fit <- glmnet(x_boot, y_boot, alpha = 1, lambda = best_lambda)
-  fit
+  y_vec <- df$consult_length
+
+  list(x_matrix = x_matrix, y_vec = y_vec)
 }
+
 
 
 orderly_dependency("process_benin", "latest", files = c("benin_dco.rds"))
 benin_dco <- readRDS("benin_dco.rds")
+
 benin_small <- select(
   benin_dco, consult_length, m0_milieu, m_id2, facility_type, facility_status,
-  n_staff, catchment_pop, pregnant_women_private_space, number_of_maternal_deaths,
-  total_attendance_2009,
-  women_in_labour_pay, m0_id8, first_anc, trimester, hour_start
+  pregnant_women_private_space, doctor_or_nursing_and_midwifery_per_10000,
+  women_in_labour_pay, m0_id8, first_anc, trimester, time_elapsed_since_start_of_day
 )
-benin_small$log_consult_length <- log(benin_small$consult_length)
-## We will center some variables to enhance
-## interpretability of coefficients.
 
-benin_small$catchment_pop_centered <- scale(
-  benin_small$catchment_pop, center = TRUE, scale = FALSE
-)
+benin_small$log_consult_length <- log(benin_small$consult_length)
 
 set.seed(42)
 
@@ -54,98 +49,100 @@ benin_split <- split(
 )
 
 ## Remove strata with less than 30 observations
+map(benin_split, nrow)
 benin_split <- keep(benin_split, function(x) nrow(x) >= 30)
-
+## Remove NAs
+benin_split <- map(benin_split, na.omit)
 
 ##############################################
 ### 1. LASSO model with cross-validated lambda
 ##############################################
-lasso_fit <- map(benin_split, function(x) {
-  x <- x[complete.cases(x), ]
-  cli::cli_alert("Retained rows {nrow(x)}")
-  x_matrix <- model.matrix(log_consult_length ~ (
-    n_staff + catchment_pop_centered + m0_milieu + m_id2 +
-      total_attendance_2009 +
-      pregnant_women_private_space + number_of_maternal_deaths +
-      women_in_labour_pay +
-      ## HCW characteristics
-      m0_id8 +
-      ## Patient characteristics
-      trimester +
-      ## Appointment characteristics
-      hour_start), data = x)[, -1]
-
-  y_vec <- x$log_consult_length
-
-  cv_fit <- cv.glmnet(x_matrix, y_vec, alpha = 1, standardize = TRUE)
+best_lambda <- map(benin_split, function(x) {
+  out <- full_model(x)
+  cv_fit <- cv.glmnet(out$x_matrix, out$y_vec, alpha = 1, standardize = TRUE)
   bestl <- cv_fit$lambda.min
-
-  out <- glmnet(x_matrix, y_vec, alpha = 1, lambda = bestl)
-  out
+  bestl
 })
+
+lasso_fit <- map2(benin_split, best_lambda, function(x, bestl) {
+
+  if (nrow(x) == 0) return(NULL)
+  cli::cli_alert("Retained rows {nrow(x)}")
+  out <- full_model(x)
+  glmnet(out$x_matrix, out$y_vec, alpha = 1, lambda = bestl)
+  
+})
+
+coefficients <- map_dfr(lasso_fit, function(x) {
+  out <- as.data.frame(as.matrix(coef(x)))
+  out <- tibble::rownames_to_column(out, "term")
+  out
+}, .id = "datacut")
 
 ##############################################
 # 2. Bootstrapping with rsample
 ##############################################
 n_boot <- 100
 
-boot_samples <- bootstraps(benin_small, times = n_boot)
+boot_samples <- map(benin_split, function(x) bootstraps(x, times = n_boot))
 
+boot_coefs <- map2_dfr(boot_samples, best_lambda, function(boot, bestl) {
+  map_dfr(boot$splits, function(split) {
+    x <- analysis(split)
+    model <- full_model(x)
+    fit <- glmnet(model$x_matrix, model$y_vec, alpha = 1, lambda = bestl)
+    out <- as.data.frame(as.matrix(coef(fit)))
+    out <- tibble::rownames_to_column(out, "term")
+    out
+  })
+}, .id = "datacut")
 
-boot_coefs <- map_dfr(boot_samples$splits, boot_lasso)
-
-# ================================
-# 5. Summarise bootstrapped estimates
-# ================================
+##############################################
+# 3. Summarise bootstrapped estimates
+##############################################
 summary_table <- boot_coefs %>%
-  pivot_longer(cols = everything(), names_to = "term", values_to = "estimate") %>%
-  group_by(term) %>%
+  group_by(datacut, term) %>%
   summarise(
-    mean = mean(estimate),
-    sd = sd(estimate),
-    lower = quantile(estimate, 0.025),
-    upper = quantile(estimate, 0.975),
-    .groups = "drop"
+    mean = mean(s0),
+    sd = sd(s0),
+    lower = quantile(s0, 0.025),
+    upper = quantile(s0, 0.975)   
   ) %>%
   arrange(desc(abs(mean)))
 
 print(summary_table)
 
-# ================================
-# 6. Visualise bootstrapped intervals
-# ================================
-ggplot(summary_table, aes(x = reorder(term, abs(mean)), y = mean)) +
+##############################################
+### 4. RMSE and R-squared
+##############################################
+predicted_y <- map2(lasso_fit, benin_split, function(fit, x) {
+  if (nrow(x) == 0) return(NULL)
+  out <- full_model(x)
+  predict(fit, newx = out$x_matrix)
+})
+
+rmse <- map2_dbl(predicted_y, benin_split, function(pred, x) {
+  if (nrow(x) == 0) {
+    return(NULL)
+  }
+  sqrt(mean((x$consult_length - pred)^2))
+})
+
+r_squared <- map2_dbl(predicted_y, benin_split, function(pred, x) {
+  if (nrow(x) == 0) {
+    return(NULL)
+  }
+  cor(x$consult_length, pred)^2
+})
+
+##############################################
+# 5. Visualise bootstrapped intervals
+##############################################
+ggplot(summary_table, aes(y = term, x = mean)) +
   geom_point() +
-  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
-  coord_flip() +
+  facet_wrap(~datacut) +
   labs(
     title = "Bootstrapped LASSO Coefficients",
-    x = "Predictor",
-    y = "Estimate (with 95% CI)"
+    y = "Predictor",
+    x = "Estimate (with 95% CI)"
   )
-
-
-# Predict on the original dataset
-log_predicted_y <- predict(lasso_fit, newx = x_matrix)
-predicted_y <- exp(log_predicted_y)
-# Compare to actual values
-
-benin_small$predicted_consult_length <- predicted_y
-  
-library(ggplot2)
-
-ggplot(benin_small, aes(x = log_consult_length, y = log(predicted_consult_length))) +
-  geom_point(alpha = 0.6) +
-  geom_abline(slope = 1, intercept = 0, color = "blue", linetype = "dashed") +
-  labs(
-    title = "Actual vs Predicted Values from LASSO",
-    x = "Actual y",
-    y = "Predicted y"
-  ) +
-  theme_minimal() + coord_fixed()
-
-rmse <- sqrt(mean((benin_small$log_consult_length - log_predicted_y)^2))
-r_squared <- cor(benin_small$log_consult_length, log_predicted_y)^2
-
-cat("RMSE:", rmse, "\n")
-cat("R-squared:", r_squared, "\n")
