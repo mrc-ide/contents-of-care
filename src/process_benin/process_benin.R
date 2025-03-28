@@ -2,7 +2,9 @@ library(dplyr)
 library(foreign)
 library(lubridate)
 library(orderly2)
+library(tidylog)
 library(tidyr)
+
 ## Data dictionary available at
 ## https://microdata.worldbank.org/index.php/catalog/2176/data-dictionary
 
@@ -14,8 +16,8 @@ orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 indir <- "resources/benin/BEN_2010_HRBF_v01_M_v01_A_PUF_Stata8/"
 infile <- "benhrbf2_m.dta" 
-benin <- orderly_shared_resource(benin.dta = paste0(indir, infile))
-benin <- read.dta("benin.dta")
+orderly_shared_resource(benin.dta = paste0(indir, infile))
+benin <- read.dta("benin.dta", convert.factors = FALSE)
 
 
 ## m0_03 to m3_6 describe the individual steps in the examnination
@@ -99,8 +101,7 @@ benin <- rename(
   pregnancy_stage = m3_4,
   ## If m3_3 and m3_ are both no, then m3_6 is not applicable
   sp_prescribed3 = m3_5,
-  sp_ensured3 = m3_6
-)
+  sp_ensured3 = m3_6)
 
 
 
@@ -119,11 +120,12 @@ benin <- mutate(benin, across(first_anc:sp_ensured3, recode_oui_non))
 
 ## Process Health facility survey (part 2: clinical aspects)
 ## https://microdata.worldbank.org/index.php/catalog/2176/data-dictionary/F29?file_name=benhrbf2_f
+## 201 facilities in the dataset; the study had 200 facilities. so every facility should be present
+## in the dataset.
 infile <- "benhrbf2_f.dta"
-benin_hfds <- orderly_shared_resource(benin_hfds.dta = paste0(indir, infile))
+orderly_shared_resource(benin_hfds.dta = paste0(indir, infile))
 facility_survey_cl <- read.dta("benin_hfds.dta")
 
-## These codes are used when information is not available
 facility_survey_cl <- mutate(
   facility_survey_cl,
   across(
@@ -295,6 +297,7 @@ orderly_shared_resource(benin_hf_admin.dta = paste0(indir, infile))
 ## convert.factors = FALSE is used to avoid converting factors to underlying codes
 ## so we don't run into encoding issues
 facility_survey_admin <- read.dta("benin_hf_admin.dta", convert.factors = FALSE)
+## This dataset also has 201 facilities
 facility_survey_admin$facility_type <- case_when(
   facility_survey_admin$e1_1 == 1 ~ "National Hospital",
   facility_survey_admin$e1_1 == 2 ~ "Departmental Hospital",
@@ -331,6 +334,7 @@ orderly_artefact(
 ## Health worker surveys: unannounced visits
 infile <- "benhrbf2_g1.dta"
 orderly_shared_resource(benin_hw_unannounced.dta = paste0(indir, infile))
+## Also 201 facilities
 hw_unannounced <- read.dta("benin_hw_unannounced.dta")
 ## g0_01 codes the number of visit i.e. whether this is the first, or the second
 ## visit
@@ -356,6 +360,7 @@ hw_unannounced <- read.dta("benin_hw_unannounced.dta")
 ## The dataset has 41833 rows but the vast majority of them are missing data
 ## 37157 rows have NAs in key columns which are g1_15 (no), and g1_20 (present)
 ## We will therefore exlcude rows where no is missing.
+## Still 201 facilities
 hw_unannounced <- filter(hw_unannounced, !is.na(g1_15))
 ## If we now repeat the above check, we find that there is only one facility
 ## where the number of health workers is different between the first and second
@@ -418,11 +423,11 @@ orderly_artefact(
 ## the numbers make sense
 ## https://apps.who.int/gho/data/node.main-afro.UHCHRH?lang=en
 
-x <- filter(
-  hw_count, hw_category %in% c("doctor", "nurse", "midwife", "pharmacist")
+x <- spread(hw_count, hw_category, n)
+x$doctor_or_nursing_and_midwifery <- rowSums(
+  cbind(x$doctor, x$nurse, x$midwife),
+  na.rm = TRUE
 )
-
-x <- spread(x, hw_category, n)
 
 x$nursing_and_midwifery <- rowSums(cbind(x$nurse, x$midwife), na.rm = TRUE)
 
@@ -434,6 +439,8 @@ z <- left_join(x, y, by = c("g_id1" = "f_id1"))
 z$doctors_per_10000 <- (z$doctor / z$catchment_pop) * 10000
 z$nursing_and_midwifery_per_10000 <-
   (z$nursing_and_midwifery / z$catchment_pop) * 10000
+z$doctor_or_nursing_and_midwifery_per_10000 <-
+  (z$doctor_or_nursing_and_midwifery / z$catchment_pop) * 10000
 ## Sense checked the numbers; they roughly make sense, except for facilities
 ## with very small catchment populations. As these are not used in DCOs, I am
 ## sort of okay with the data.
