@@ -14,7 +14,10 @@ library(tidyr)
 full_model <- function(df) {
   x_matrix <- model.matrix(consult_length ~ (
     doctor_or_nursing_and_midwifery_per_10000 + m0_milieu + m_id2 +
-      women_in_labour_pay +
+    women_in_labour_pay +
+    pregnant_women_private_space +
+    number_of_births_2009 +
+    fetoscope +
       ## HCW characteristics
       factor(m0_id8) +
       ## Patient characteristics
@@ -29,13 +32,21 @@ full_model <- function(df) {
 
 
 
+
+
 orderly_dependency("process_benin", "latest", files = c("benin_dco.rds"))
 benin_dco <- readRDS("benin_dco.rds")
-
+## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
+benin_dco$fetoscope <- case_when(
+  benin_dco$fetoscope %in% 2L ~ 0,
+  benin_dco$fetoscope %in% 1L ~ 1,
+  TRUE ~ NA_real_
+)
 benin_small <- select(
   benin_dco, consult_length, m0_milieu, m_id2, facility_type, facility_status,
   pregnant_women_private_space, doctor_or_nursing_and_midwifery_per_10000,
-  women_in_labour_pay, m0_id8, first_anc, trimester, time_elapsed_since_start_of_day
+  women_in_labour_pay, m0_id8, first_anc, trimester, time_elapsed_since_start_of_day,
+  fetoscope, number_of_births_2009
 )
 
 benin_small$log_consult_length <- log(benin_small$consult_length)
@@ -44,16 +55,14 @@ set.seed(42)
 
 ## Stratify by facility type and first ANC
 benin_split <- split(
-  benin_small, list(benin_small$facility_type, benin_small$first_anc),
+  benin_small, list(benin_dco$facility_type, benin_dco$first_anc),
   sep = "_"
 )
 
 ## Remove strata with less than 30 observations
 map(benin_split, nrow)
 benin_split <- keep(benin_split, function(x) nrow(x) >= 30)
-## Remove NAs
 benin_split <- map(benin_split, na.omit)
-
 ##############################################
 ### 1. LASSO model with cross-validated lambda
 ##############################################
@@ -94,8 +103,7 @@ boot_coefs <- map2_dfr(boot_samples, best_lambda, function(boot, bestl) {
     out <- as.data.frame(as.matrix(coef(fit)))
     out <- tibble::rownames_to_column(out, "term")
     out
-  })
-}, .id = "datacut")
+  })}, .id = "datacut")
 
 ##############################################
 # 3. Summarise bootstrapped estimates
