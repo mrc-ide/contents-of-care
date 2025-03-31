@@ -3,16 +3,17 @@ library(dplyr)
 library(janitor)
 library(readr)
 library(skimr)
+library(tidylog)
 ## Questionnaire F3 is DCO for prenatal consultation
 
 indir <- "resources/bfa/baseline/BFA_2013_HRBFIE-FBL_v01_M_CSV"
 infile <- "f3_aug19.csv"
 orderly_shared_resource(bfa_dco.csv = paste(indir, infile, sep = "/"))
-bfa_baseline <- read_csv("bfa_dco.csv")
+bfa_baseline_dco <- read_csv("bfa_dco.csv")
 
 
-bfa_baseline <- rename(
-  bfa_baseline,
+bfa_baseline_dco <- rename(
+  bfa_baseline_dco,
   num_prev_anc_visits = f3_102,
   pregnancy_week = f3_103,
   first_pregnancy = f3_104,
@@ -71,29 +72,71 @@ bfa_baseline <- rename(
   ## more questions upto f3_218
 )
 
-bfa_baseline$first_anc <- ifelse(bfa_baseline$num_prev_anc_visits == 0, 1, 0)
-bfa_baseline$pregnancy_week <- ifelse(
-  bfa_baseline$pregnancy_week %in% 98, NA, bfa_baseline$pregnancy_week
+bfa_baseline_dco$first_anc <- ifelse(bfa_baseline_dco$num_prev_anc_visits == 0, 1, 0)
+bfa_baseline_dco$pregnancy_week <- ifelse(
+  bfa_baseline_dco$pregnancy_week %in% 98, NA, bfa_baseline_dco$pregnancy_week
 )
 
-bfa_baseline$trimester <- ifelse(
-  bfa_baseline$pregnancy_week < 13, "First Trimester",
-  ifelse(bfa_baseline$pregnancy_week < 28, "Second Trimester", "Third Trimester")
+bfa_baseline_dco$trimester <- ifelse(
+  bfa_baseline_dco$pregnancy_week < 13, "First Trimester",
+  ifelse(bfa_baseline_dco$pregnancy_week < 28, "Second Trimester", "Third Trimester")
 )
 ## Following columns not found in any csv file:
-## f1_niv, 
+## f1_niv, f1_reg, f1_dist
+
+
 infile <- "f1_main_aug19.csv"
 orderly_shared_resource(bfa_hf_survey.csv = paste(indir, infile, sep = "/"))
 bfa_hf_survey <- read_csv("bfa_hf_survey.csv")
+
 bfa_hf_survey <- rename(
   bfa_hf_survey,
-  num_authorised_doctors = f1_305_2,
-  num_authorised_pharmacists = f1_305_3,
-  num_authorised_dental_surgeon = f1_305_4,
-  num_authorised_health_attache = f1_305_5,
-  num_authorised_nursing_graduate = f1_305_6,
-  num_authorised_nurse = f1_305_7,
-  num_authorised_midwife_state = f1_305_8,
-  num_authorised_midwife_patented = f1_305_13,
-  
-  )
+  facility_type = f1_105,
+  ## The following are the number of *filled* positions for each type
+  doctors = f1_305_2,
+  pharmacists = f1_305_3,
+  dental_surgeon = f1_305_4,
+  health_attache = f1_305_5,
+  nursing_graduate = f1_305_6,
+  nurse = f1_305_7,
+  midwife_state = f1_305_8,
+  midwife_patented = f1_305_13,
+  ## In last one year
+  num_maternal_deaths = f1_631,
+  ## catchment population:
+  ## Can you estimate the size of the population that uses this health facility?
+  estimate_catchment_population = f1_701, ## 15 people said no
+  catchment_pop = f1_702_a,
+  catchment_pop_female_15_49 = f1_702_b,
+  total_attendance = f1_703 ## duration unclear
+)
+
+## Question is: who owns this health facility?
+bfa_hf_survey$facility_type <- case_when(
+  bfa_hf_survey$facility_type == 1 ~ "government facility",
+  bfa_hf_survey$facility_type == 2 ~ "private-for-profit facility",
+  bfa_hf_survey$facility_type == 3 ~ "ngo",
+  bfa_hf_survey$facility_type == 4 ~ "mission/religious facility",
+  bfa_hf_survey$facility_type == 5 ~ "special",
+  bfa_hf_survey$facility_type == 6 ~ "military",
+  bfa_hf_survey$facility_type == 7 ~ "other",
+  TRUE ~ NA
+)
+
+## I don't have acccess to the questionnaire but these values feel like code
+## for NA
+bfa_hf_survey$num_maternal_deaths <- case_when(
+  bfa_hf_survey$num_maternal_deaths %in% c(998, 999, 98) ~ NA,
+  TRUE ~ bfa_hf_survey$num_maternal_deaths
+)
+
+bfa_hf_survey$catchment_pop <- case_when(
+  bfa_hf_survey$catchment_pop %in% c(99111998, 99999998) ~ NA,
+)
+
+bfa_baseline_dco <- left_join(bfa_baseline_dco, bfa_hf_survey, by = "SE")
+saveRDS(bfa_baseline_dco, "bfa_baseline_dco.rds")
+orderly_artefact(
+  files = "bfa_baseline_dco.rds",
+  description = "DCO for Burkina Faso baseline survey"
+)
