@@ -1,6 +1,7 @@
 library(orderly2)
 library(dplyr)
 library(janitor)
+library(lubridate)
 library(readr)
 library(skimr)
 library(tidylog)
@@ -72,6 +73,27 @@ bfa_baseline_dco <- rename(
   ## more questions upto f3_218
 )
 
+bfa_baseline_dco$consult_start <- case_when(
+  bfa_baseline_dco$consult_start %in% 99 ~ NA,
+  TRUE ~ bfa_baseline_dco$consult_start
+)
+time_vec <- bfa_baseline_dco$consult_start
+time_str <- sprintf("%04d", time_vec)
+bfa_baseline_dco$consult_start_formatted <- hm(
+  paste0(substr(time_str, 1, 2), ":", substr(time_str, 3, 4))
+)
+
+time_vec <- bfa_baseline_dco$consult_end
+time_str <- sprintf("%04d", time_vec)
+bfa_baseline_dco$consult_end_formatted <- hm(
+  paste0(substr(time_str, 1, 2), ":", substr(time_str, 3, 4))
+)
+start_of_day <- hm("07:00") 
+bfa_baseline_dco$time_elapsed_since_start_of_day <-
+  time_length(bfa_baseline_dco$consult_start_formatted - start_of_day, unit = "minute")
+
+
+
 bfa_baseline_dco$first_anc <- ifelse(bfa_baseline_dco$num_prev_anc_visits == 0, 1, 0)
 bfa_baseline_dco$pregnancy_week <- ifelse(
   bfa_baseline_dco$pregnancy_week %in% 98, NA, bfa_baseline_dco$pregnancy_week
@@ -113,6 +135,10 @@ bfa_hf_survey <- rename(
   catchment_pop_female_15_49 = f1_702_b,
   total_attendance = f1_703 ## duration unclear
 )
+
+bfa_hf_survey$total_attendance <- case_when(
+  bfa_hf_survey$total_attendance %in% 9998 ~ NA,
+  TRUE ~ bfa_hf_survey$total_attendance)
 
 ## Question is: who owns this health facility?
 bfa_hf_survey$facility_type <- case_when(
