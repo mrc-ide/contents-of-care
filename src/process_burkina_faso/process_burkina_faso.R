@@ -93,6 +93,9 @@ bfa_hf_survey <- rename(
   bfa_hf_survey,
   facility_type = f1_105,
   ## The following are the number of *filled* positions for each type
+  ## I am not confident these numbers are correct.
+  ## For example, for the number of doctors, 90% are NA; and an
+  ## additional 4% are 0
   doctors = f1_305_2,
   pharmacists = f1_305_3,
   dental_surgeon = f1_305_4,
@@ -132,9 +135,55 @@ bfa_hf_survey$num_maternal_deaths <- case_when(
 
 bfa_hf_survey$catchment_pop <- case_when(
   bfa_hf_survey$catchment_pop %in% c(99111998, 99999998) ~ NA,
+  TRUE ~ bfa_hf_survey$catchment_pop
 )
 
-bfa_baseline_dco <- left_join(bfa_baseline_dco, bfa_hf_survey, by = "SE")
+## Don't use this column; use the column from the HW roster below.
+## bfa_hf_survey$doctor_or_nursing_and_midwifery <- rowSums(
+##   cbind(
+##     bfa_hf_survey$doctors, bfa_hf_survey$midwife_state, bfa_hf_survey$midwife_patented
+##   ), na.rm = TRUE
+## )
+
+
+
+infile <- "f1_healthworkers_aug19.csv"
+orderly_shared_resource(bfa_hf_workers.csv = paste(indir, infile, sep = "/"))
+bfa_hf_workers <- read_csv("bfa_hf_workers.csv")
+
+bfa_hf_workers$hcw_role <- case_when(
+  bfa_hf_workers$f1_405 == 1 ~ "health center chief",
+  bfa_hf_workers$f1_405 == 2 ~ "doctor",
+  bfa_hf_workers$f1_405 == 3 ~ "pharmacist",
+  bfa_hf_workers$f1_405 == 4 ~ "dental surgeon",
+  bfa_hf_workers$f1_405 == 5 ~ "ophthalmology health technician",
+  bfa_hf_workers$f1_405 == 6 ~ "state-certified nurse",
+  bfa_hf_workers$f1_405 == 7 ~ "certified nurse",
+  bfa_hf_workers$f1_405 == 8 ~ "state-certified midwife",
+  bfa_hf_workers$f1_405 == 9 ~ "biomedical technologist",
+  bfa_hf_workers$f1_405 == 10 ~ "radiologic technician",
+  TRUE ~ as.character(bfa_hf_workers$f1_405)
+)
+## Still lots of NAs.
+## Further, there are codes that are not explained in the questionnaire
+## So I dont know what they mean
+
+hcw_count <- count(bfa_hf_workers, SE, hcw_role) |> spread(hcw_role, n)
+
+hcw_count$doctor_or_nursing_and_midwifery <- rowSums(
+  cbind(
+    hcw_count$doctor,
+    hcw_count$`certified nurse`,
+    hcw_count$`state-certified nurse`,
+    hcw_count$`state-certified midwife`
+  ), na.rm = TRUE
+)
+hcw_count <- left_join(hcw_count, bfa_hf_survey, by = "SE")
+hcw_count$doctor_or_nursing_and_midwifery_per_10000 <- (
+  hcw_count$doctor_or_nursing_and_midwifery / hcw_count$catchment_pop
+) * 10000
+
+bfa_baseline_dco <- left_join(bfa_baseline_dco, hcw_count, by = "SE")
 saveRDS(bfa_baseline_dco, "bfa_baseline_dco.rds")
 orderly_artefact(
   files = "bfa_baseline_dco.rds",
