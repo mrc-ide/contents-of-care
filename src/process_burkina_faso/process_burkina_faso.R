@@ -284,6 +284,21 @@ bfa_baseline_exit <- rename(
   patient_seen_tba = f5_801 ## in the last 1 month
 )
 
+cols <- c(
+  "patient_seen_chw_at_health_center",
+  "patient_seen_chw_at_home",
+  "patient_seen_chw_elsewhere"
+)
+
+bfa_baseline_exit$patient_seen_chw <- apply(
+  bfa_baseline_exit[, cols], 1, function(row) {
+    if (any(row == 1, na.rm = TRUE)) return(1)
+    else if (all(is.na(row))) return(NA)
+    else return(2)
+  }
+)
+
+
 bfa_baseline_exit <- mutate_at(
   bfa_baseline_exit, vars(contains("patient_seen_chw")), function(x) {
     x <- ifelse(x %in% 9994, NA, x)
