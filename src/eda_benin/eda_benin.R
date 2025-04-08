@@ -27,7 +27,7 @@ p1 <- gghistogram(
   theme_pubr() +
   xlab("Consultation length (minutes)") 
 
-outfile <- glue("{outfile_prefix}_overall.pdf")
+outfile <- glue("{outfile_prefix}_overall.png")
 ggexport(plotlist = list(p1), filename = outfile)
 orderly_artefact(description = "Consultation length in Benin", files = outfile)
 
@@ -70,7 +70,7 @@ p1$main.plot <- p1$main.plot +
   theme_pubr() +
   xlab("Facility Id")
 
-outfile <- glue("{outfile_prefix}_facility.pdf")
+outfile <- glue("{outfile_prefix}_facility.png")
 ggexport(plotlist = list(p1), filename = outfile)
 orderly_artefact(
   description = "Consultation length by facility", files = outfile
@@ -93,9 +93,9 @@ p2$main.plot <- p2$main.plot +
   ylab("Consultation length (minutes)") +
   theme_pubr() 
 
-outfile <- glue("{outfile_prefix}_milieu.pdf")
+outfile <- glue("{outfile_prefix}_milieu.png")
 ggexport(
-  plotlist = list(p2), filename = glue("{outfile_prefix}_milieu.pdf")
+  plotlist = list(p2), filename = glue("{outfile_prefix}_milieu.png")
 )
 orderly_artefact(
   description = "Consultation length by urban/rural", files = outfile
@@ -118,7 +118,7 @@ p3$main.plot <- p3$main.plot +
   xlab("Health zone") +
   theme_pubr()
 
-outfile <- glue("{outfile_prefix}_healthzone.pdf")
+outfile <- glue("{outfile_prefix}_healthzone.png")
 ggexport(plotlist = list(p3), filename = outfile)
 orderly_artefact(
   description = "Consultation length by health zone", files = outfile
@@ -139,7 +139,7 @@ p3$main.plot <- p3$main.plot +
   theme_pubr() +
   theme(axis.text.x = element_text(hjust = c(0.9, 0.7, 0.5, 0.4), size = 8))
 
-outfile <- glue("{outfile_prefix}_facility_type.pdf")
+outfile <- glue("{outfile_prefix}_facility_type.png")
 ggexport(plotlist = list(p3), filename = outfile)
 orderly_artefact(
   description = "Consultation length by facility type", files = outfile
@@ -158,7 +158,7 @@ p3$main.plot <- p3$main.plot +
   theme_pubr() +
   xlab("Facility status")
 
-outfile <- glue("{outfile_prefix}_facility_status.pdf")
+outfile <- glue("{outfile_prefix}_facility_status.png")
 ggexport(plotlist = list(p3), filename = outfile)
 orderly_artefact(
   description = "Consultation length by facility status", files = outfile
@@ -178,7 +178,7 @@ p3$main.plot <- p3$main.plot +
   theme_pubr() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-outfile <- glue("{outfile_prefix}_catchment_pop.pdf")
+outfile <- glue("{outfile_prefix}_catchment_pop.png")
 ggexport(plotlist = list(p3), filename = outfile)
 orderly_artefact(
   description = "Consultation length by catchment population", files = outfile
@@ -198,7 +198,7 @@ p3$main.plot <- p3$main.plot +
   theme_pubr() +
   xlab("Total attendance in 2009")
 
-outfile <- glue("{outfile_prefix}_attendance.pdf")
+outfile <- glue("{outfile_prefix}_attendance.png")
 ggexport(plotlist = list(p3), filename = outfile)
 orderly_artefact(
   description = "Consultation length by total attendane in 2009", files = outfile
@@ -236,7 +236,7 @@ p3$main.plot <- p3$main.plot +
   theme_pubr() +
   xlab("Number of maternal deaths")
 
-outfile <- glue("{outfile_prefix}_maternal_deaths.pdf")
+outfile <- glue("{outfile_prefix}_maternal_deaths.png")
 ggexport(plotlist = list(p3), filename = outfile)
 orderly_artefact(
   description = "Consultation length by number of maternal deaths",
@@ -257,7 +257,7 @@ p3$main.plot <- p3$main.plot +
   theme_pubr() +
   xlab("Number of births in 2009")
 
-outfile <- glue("{outfile_prefix}_births_2009.pdf")
+outfile <- glue("{outfile_prefix}_births_2009.png")
 ggexport(plotlist = list(p3), filename = outfile)
 orderly_artefact(
   description = "Consultation length by number of births in 2009",
@@ -286,7 +286,7 @@ p$main.plot <- p$main.plot +
   theme_pubr() +
   xlab("Number of staff")
 
-ggexport(plotlist = list(p), filename = glue("{outfile_prefix}_staff.pdf"))
+ggexport(plotlist = list(p), filename = glue("{outfile_prefix}_staff.png"))
 orderly_artefact(
   description = "Consultation length by number of staff", files = outfile
 )
@@ -308,7 +308,7 @@ p4$main.plot <- p4$main.plot +
   theme_pubr() +
   xlab("First ANC visit (yes/no)")
 
-outfile <- glue("{outfile_prefix}_first_anc.pdf")
+outfile <- glue("{outfile_prefix}_first_anc.png")
 ggexport(plotlist = list(p4), filename = outfile)
 orderly_artefact(
   description = "Consultation length by first ANC visit", files = outfile
@@ -331,7 +331,7 @@ p5$main.plot <- p5$main.plot +
   ylab("Consultation length (minutes)") +
   theme_pubr() 
 
-outfile <- glue("{outfile_prefix}_trimester.pdf")
+outfile <- glue("{outfile_prefix}_trimester.png")
 ggexport(plotlist = list(p5), filename = outfile)
 orderly_artefact(
   description = "Consultation length by trimester", files = outfile
@@ -354,7 +354,7 @@ p6$main.plot <- p6$main.plot +
   theme_pubr() +
   xlab("Consultation start hour")
 
-outfile <- glue("{outfile_prefix}_hour_start.pdf")
+outfile <- glue("{outfile_prefix}_hour_start.png")
 ggexport(plotlist = list(p6), filename = outfile)
 orderly_artefact(
   description = "Consultation length by hour of day", files = outfile

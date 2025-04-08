@@ -4,6 +4,7 @@ library(janitor)
 library(lubridate)
 library(readr)
 library(skimr)
+library(table1)
 library(tidylog)
 ## Questionnaire F3 is DCO for prenatal consultation
 
@@ -104,7 +105,9 @@ bfa_baseline_dco$trimester <- ifelse(
   ifelse(bfa_baseline_dco$pregnancy_week < 28, "Second Trimester", "Third Trimester")
 )
 ## Following columns not found in any csv file:
-## f1_niv, f1_reg, f1_dist
+## f1_niv, f1_reg, f1_dist;
+## f1_niv is called NIVEAU_FS. That is, variable names as noted in the
+## translation are not the same as in the data dictionary or the csv files.
 
 
 infile <- "f1_main_aug19.csv"
@@ -113,6 +116,7 @@ bfa_hf_survey <- read_csv("bfa_hf_survey.csv")
 
 bfa_hf_survey <- rename(
   bfa_hf_survey,
+  facility_level = NIVEAU_FS,
   facility_type = f1_105,
   ## The following are the number of *filled* positions for each type
   ## I am not confident these numbers are correct.
@@ -135,6 +139,18 @@ bfa_hf_survey <- rename(
   catchment_pop_female_15_49 = f1_702_b,
   total_attendance = f1_703 ## duration unclear
 )
+
+bfa_hf_survey$facility_level <- case_when(
+  bfa_hf_survey$facility_level == 1 ~ "Regional hospital",
+  bfa_hf_survey$facility_level == 2 ~ "District hospital",  
+  bfa_hf_survey$facility_level == 3 ~ "Medical center",
+  bfa_hf_survey$facility_level == 4 ~ "CSPS",
+  bfa_hf_survey$facility_level == 5 ~ "Dispensary maternity Unit",
+  bfa_hf_survey$facility_level == 6 ~ "Private clinic",
+  bfa_hf_survey$facility_level == 7 ~ "Private religious health facility",
+  TRUE ~ NA
+)
+
 
 bfa_hf_survey$total_attendance <- case_when(
   bfa_hf_survey$total_attendance %in% 9998 ~ NA,
@@ -214,4 +230,150 @@ saveRDS(bfa_baseline_dco, "bfa_baseline_dco.rds")
 orderly_artefact(
   files = "bfa_baseline_dco.rds",
   description = "DCO for Burkina Faso baseline survey"
+)
+
+## ANC Exit interview; tranlsation from page 670 of accompanying PDF
+## Questionnaire F5 is exit survey; however data dictionary says it is F6!
+## In the tranlsation, it appears to be f5 rather than f6.
+## SO I am going with F5.
+orderly_shared_resource(
+  bfa_baseline_exit.csv = paste(indir, "f5_aug19.csv", sep = "/")
+) 
+bfa_baseline_exit <- read_csv("bfa_baseline_exit.csv")
+bfa_baseline_exit <- rename(
+  bfa_baseline_exit,
+  facility_level = NIVEAU_FS,
+  patient_age = f5_101,
+  patient_can_read_write = f5_102,
+  patient_highest_education = f5_103,
+  ## 104 has more details about education
+  patient_marital_status = f5_105,
+  patient_partner_highest_education = f5_106,
+  num_of_hcws_seen = f5_201,
+  num_of_weeks_pregnant_an_book = f5_212,
+  num_of_weeks_pregnant_self_report = f5_215,
+  ## These two variables are *very* different for 41% rows
+  first_pregnancy = f5_216,
+  first_anc_at_this_hf = f5_217,
+  num_prev_anc_visits = f5_218, ## including this one
+  num_prev_anc_visits_other_hf = f5_219,
+  ## f5_220:f5_251_m talk the patient through the various steps
+  patient_residence_distance = f5_301,
+  patient_residence_travel_time = f5_302, ## in minutes
+  patient_mode_of_transport = f5_303,
+  patient_travel_cost = f5_304,
+  patient_wait_time = f5_305,
+  consult_length = f5_306,
+  waiting_time_too_long = f5_307,
+  patient_paid_consult_fee = f5_308,
+  patient_consult_fee = f5_309,
+  patient_paid_extra_fee = f5_310, ## 99.6% said no
+  lab_test_done = f5_312,
+  lab_test_fee = f5_313,
+  us_done = f5_314,
+  us_fee = f5_315,
+  medicine_dispensed = f5_316,
+  medicine_fee = f5_317,
+  total_hf_fees = f5_318,
+  ## f5_401 to f5:428 record answers about the HF
+  ## f5_601 onwards are about patient's household
+  patient_seen_chw_at_health_center = f5_703, ## in the last 1 month
+  patient_seen_chw_at_home = f5_704, ## in the last 1 month
+  patient_seen_chw_elsewhere = f5_705, ## in the last 1 month
+  ## tba is traditional birth attendant
+  patient_seen_tba = f5_801 ## in the last 1 month
+)
+
+bfa_baseline_exit <- mutate_at(
+  bfa_baseline_exit, vars(contains("patient_seen_chw")), function(x) {
+    x <- ifelse(x %in% 9994, NA, x)
+  }
+)
+
+bfa_baseline_exit$total_hf_fees <- case_when(
+  bfa_baseline_exit$total_hf_fees %in% c(9998, 99999) ~ NA,
+  TRUE ~ bfa_baseline_exit$total_hf_fees
+)
+
+bfa_baseline_exit$num_prev_anc_visits <- case_when(
+  bfa_baseline_exit$num_prev_anc_visits %in% c(9994, 9999) ~ NA,
+  TRUE ~ bfa_baseline_exit$num_prev_anc_visits
+)
+
+bfa_baseline_exit$patient_seen_tba <- case_when(
+  bfa_baseline_exit$patient_seen_tba %in% 1:7 ~ 1,
+  bfa_baseline_exit$patient_seen_tba == 8 ~ 2,
+  TRUE ~ NA
+)
+
+
+bfa_baseline_exit$total_hf_fees <- case_when(
+  bfa_baseline_exit$total_hf_fees %in% c(9998, 9999) ~ NA,
+  TRUE ~ bfa_baseline_exit$total_hf_fees
+)
+
+## I suspect these are NAs
+bfa_baseline_exit$patient_residence_distance <- case_when(
+  bfa_baseline_exit$patient_residence_distance %in% c(996, 998, 999) ~ NA
+)
+
+bfa_baseline_exit$patient_residence_travel_time <- case_when(
+  bfa_baseline_exit$patient_residence_travel_time %in% c(996, 998, 999) ~ NA
+)
+
+bfa_baseline_exit$patient_wait_time <- case_when(
+  bfa_baseline_exit$patient_wait_time %in% c(996, 998, 999) ~ NA
+)
+
+
+bfa_baseline_exit$patient_highest_education <- case_when(
+  bfa_baseline_exit$patient_highest_education == 1 ~ "No education",
+  bfa_baseline_exit$patient_highest_education == 2 ~ "Primary",
+  bfa_baseline_exit$patient_highest_education == 3 ~ "Secondary 1 cycle",
+  bfa_baseline_exit$patient_highest_education == 4 ~ "Secondary 2 cycle",
+  bfa_baseline_exit$patient_highest_education == 5 ~ "Higher",
+  TRUE ~ NA
+)
+bfa_baseline_exit$facility_level <- case_when(
+  bfa_baseline_exit$facility_level == 1 ~ "Regional hospital",
+  bfa_baseline_exit$facility_level == 2 ~ "District hospital",
+  bfa_baseline_exit$facility_level == 3 ~ "Medical center",
+  bfa_baseline_exit$facility_level == 4 ~ "CSPS",
+  bfa_baseline_exit$facility_level == 5 ~ "Dispensary maternity Unit",
+  bfa_baseline_exit$facility_level == 6 ~ "Private clinic",
+  bfa_baseline_exit$facility_level == 7 ~ "Private religious health facility",
+  TRUE ~ NA
+)
+bfa_baseline_exit$patient_marital_status <- case_when(
+  bfa_baseline_exit$patient_marital_status == 1 ~ "Single",
+  bfa_baseline_exit$patient_marital_status == 2 ~ "Married/Common-law",
+  bfa_baseline_exit$patient_marital_status == 3 ~ "Widowed",
+  bfa_baseline_exit$patient_marital_status == 4 ~ "Divorced",
+  TRUE ~ NA
+)
+
+bfa_baseline_exit$patient_partner_highest_education <- case_when(
+  bfa_baseline_exit$patient_partner_highest_education == 1 ~ "No education",
+  bfa_baseline_exit$patient_partner_highest_education == 2 ~ "Primary",
+  bfa_baseline_exit$patient_partner_highest_education == 3 ~ "Secondary 1 cycle",
+  bfa_baseline_exit$patient_partner_highest_education == 4 ~ "High school",
+  bfa_baseline_exit$patient_partner_highest_education == 5 ~ "University",
+  bfa_baseline_exit$patient_partner_highest_education == 6 ~ "Do not know",
+  TRUE ~ NA
+)
+
+bfa_baseline_exit$num_of_weeks_pregnant_an_book <- case_when(
+  bfa_baseline_exit$num_of_weeks_pregnant_an_book %in% 9994 ~ NA,
+  TRUE ~ bfa_baseline_exit$num_of_weeks_pregnant_an_book
+)
+
+bfa_baseline_exit$num_of_weeks_pregnant_self_report <- case_when(
+  bfa_baseline_exit$num_of_weeks_pregnant_self_report %in% 9994 ~ NA,
+  TRUE ~ bfa_baseline_exit$num_of_weeks_pregnant_self_report
+)
+
+saveRDS(bfa_baseline_exit, "bfa_baseline_exit.rds")
+orderly_artefact(
+  files = "bfa_baseline_exit.rds",
+  description = "Exit survey for Burkina Faso baseline survey"
 )

@@ -1,0 +1,90 @@
+---
+title: "Duration of antenatal consultations: key determinants and implications for quality of care"
+format:
+  revealjs: 
+    slide-number: true
+    chalkboard: 
+      buttons: false
+    preview-links: auto    
+---
+
+## Overarching questions
+
+-   Realised productivity of HCWs exceeds theoretical productivity, given expectations about the length of a health appointment. 
+-   Are specific aspects of care being routinely missed?
+-   Focusing on antenatal consultations (ANC),
+       - what are they key determinants of ANC duration?
+       - which steps of a standard ANC are being missed?
+
+
+## Data 
+
+- World Bank’s Health Results Innovation Trust Fund in sub-Saharan African countries
+- Benin 2010 
+- Burkina Faso 2013 and 2017
+- Cameroon 2012
+- Central African Republic 2012
+- Democratic Republic of Congo 2015, 2018, and 2021
+- Republic of Congo 2014
+
+
+## Data
+
+- Health facility survey
+- Health workers survey
+- Direct clinical observations (DCO) of ANC
+- Patient exit survey
+
+
+## Preliminary results: Benin
+
+![](benin_consult_length_by_overall.png)
+
+
+## Differences across facilities
+
+![](benin_consult_length_by_facility.png)
+
+
+## Variation with facility attributes (
+
+![](benin_consult_length_by_healthzone.png)
+
+
+## Variation with patient characteristics (First ANC)
+
+![](benin_consult_length_by_first_anc.png)
+
+
+## Variation with patient characteristics (Trimester)
+
+![](benin_consult_length_by_trimester.png)
+
+
+
+## Benin Linear Regression (variable selection using LASSO)
+
+R2 from 10.8% to 40.2%
+
+![](benin_lasso_bootstrapped.png)
+
+## Preliminary results: Burkina Faso
+
+![](bfa_consult_length_by_overall.png)
+
+
+## Variation with patient characteristics (First ANC)
+
+![](bfa_consult_length_by_first_anc.png)
+
+
+## Variation with patient characteristics (Trimester)
+
+![](bfa_consult_length_by_trimester.png)
+
+
+## BFA Linear Regression (variable selection using LASSO)
+
+R2 from 10.8% to 20.2%
+
+![](bfa_lasso_bootstrapped.png)
