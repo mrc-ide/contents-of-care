@@ -239,7 +239,9 @@ orderly_artefact(
 orderly_shared_resource(
   bfa_baseline_exit.csv = paste(indir, "f5_aug19.csv", sep = "/")
 ) 
+
 bfa_baseline_exit <- read_csv("bfa_baseline_exit.csv")
+
 bfa_baseline_exit <- rename(
   bfa_baseline_exit,
   facility_level = NIVEAU_FS,
@@ -254,7 +256,7 @@ bfa_baseline_exit <- rename(
   num_of_weeks_pregnant_self_report = f5_215,
   ## These two variables are *very* different for 41% rows
   first_pregnancy = f5_216,
-  first_anc_at_this_hf = f5_217,
+  first_anc_visit_at_this_hf = f5_217,
   num_prev_anc_visits = f5_218, ## including this one
   num_prev_anc_visits_other_hf = f5_219,
   ## f5_220:f5_251_m talk the patient through the various steps
@@ -284,6 +286,8 @@ bfa_baseline_exit <- rename(
   patient_seen_tba = f5_801 ## in the last 1 month
 )
 
+
+
 cols <- c(
   "patient_seen_chw_at_health_center",
   "patient_seen_chw_at_home",
@@ -292,18 +296,33 @@ cols <- c(
 
 bfa_baseline_exit$patient_seen_chw <- apply(
   bfa_baseline_exit[, cols], 1, function(row) {
-    if (any(row == 1, na.rm = TRUE)) return(1)
-    else if (all(is.na(row))) return(NA)
-    else return(2)
+    if (any(row == 1, na.rm = TRUE)) {
+      return(1)
+    } else if (all(is.na(row))) {
+      return(NA)
+    } else {
+      return(2)
+    }
   }
 )
-
 
 bfa_baseline_exit <- mutate_at(
   bfa_baseline_exit, vars(contains("patient_seen_chw")), function(x) {
     x <- ifelse(x %in% 9994, NA, x)
   }
 )
+
+
+
+
+bfa_baseline_exit$trimester <- case_when(
+  bfa_baseline_exit$num_of_weeks_pregnant_an_book < 13 ~ "First Trimester",
+  bfa_baseline_exit$num_of_weeks_pregnant_an_book > 13 &
+    bfa_baseline_exit$num_of_weeks_pregnant_an_book < 28 ~ "Second Trimester",
+  bfa_baseline_exit$num_of_weeks_pregnant_an_book >= 28 ~ "Third Trimester",
+  TRUE ~ NA)
+
+
 
 bfa_baseline_exit$total_hf_fees <- case_when(
   bfa_baseline_exit$total_hf_fees %in% c(9998, 99999) ~ NA,
@@ -329,15 +348,18 @@ bfa_baseline_exit$total_hf_fees <- case_when(
 
 ## I suspect these are NAs
 bfa_baseline_exit$patient_residence_distance <- case_when(
-  bfa_baseline_exit$patient_residence_distance %in% c(996, 998, 999) ~ NA
+  bfa_baseline_exit$patient_residence_distance %in% c(996, 998, 999) ~ NA,
+  TRUE ~ bfa_baseline_exit$patient_residence_distance
 )
 
 bfa_baseline_exit$patient_residence_travel_time <- case_when(
-  bfa_baseline_exit$patient_residence_travel_time %in% c(996, 998, 999) ~ NA
+  bfa_baseline_exit$patient_residence_travel_time %in% c(996, 998, 999) ~ NA,
+  TRUE ~ bfa_baseline_exit$patient_residence_travel_time
 )
 
 bfa_baseline_exit$patient_wait_time <- case_when(
-  bfa_baseline_exit$patient_wait_time %in% c(996, 998, 999) ~ NA
+  bfa_baseline_exit$patient_wait_time %in% c(996, 998, 999) ~ NA,
+  TRUE ~ bfa_baseline_exit$patient_wait_time
 )
 
 
@@ -386,6 +408,48 @@ bfa_baseline_exit$num_of_weeks_pregnant_self_report <- case_when(
   bfa_baseline_exit$num_of_weeks_pregnant_self_report %in% 9994 ~ NA,
   TRUE ~ bfa_baseline_exit$num_of_weeks_pregnant_self_report
 )
+## 12 is the minimum age in the dataset
+ bfa_baseline_exit$patient_age_centered <- bfa_baseline_exit$patient_age - 12
+
+
+## Collect all yes/no columns so that we can recode in one go
+bfa_baseline_exit <- relocate(
+  bfa_baseline_exit,
+  patient_can_read_write, first_pregnancy, first_anc_visit_at_this_hf,
+  waiting_time_too_long, patient_paid_consult_fee,
+  patient_paid_extra_fee, lab_test_done, us_done, medicine_dispensed,
+  patient_seen_chw_at_health_center, patient_seen_chw_at_home,
+  patient_seen_chw_elsewhere, patient_seen_tba
+)
+
+
+bfa_baseline_exit <- mutate(
+  bfa_baseline_exit, across(patient_can_read_write:patient_seen_tba, function(x) {
+    x <- case_when(x %in% 1 ~ "yes", x %in% 2 ~ "no", TRUE ~ NA)
+    x
+  }))
+
+## num_prev_anc_visits includes this one; so 0 is a mistake and the smallest
+## possible value is 1.
+bfa_baseline_exit$first_anc <- case_when(
+  bfa_baseline_exit$num_prev_anc_visits > 0 ~ "no",
+  bfa_baseline_exit$num_prev_anc_visits %in% c(0, 1) ~ "yes",
+
+  ## If first ANC visit to this HF and no previous visits to any other HF, then
+  ## this is the first ANC visit; this fills out 459 NAs
+  is.na(bfa_baseline_exit$num_prev_anc_visits) &
+    bfa_baseline_exit$first_anc_visit_at_this_hf %in% "yes" &
+  bfa_baseline_exit$num_prev_anc_visits_other_hf == 0 ~ "yes",
+  
+  ## If num_prev_anc_visits is NA, but num_prev_anc_visits_other_hf is not, and
+  ## is greater than 0, we know at least that this is not the patient's first ANC.
+  is.na(bfa_baseline_exit$num_prev_anc_visits) &
+    !is.na(bfa_baseline_exit$num_prev_anc_visits_other_hf) &
+    bfa_baseline_exit$num_prev_anc_visits_other_hf > 0 ~ "no",
+  TRUE ~ NA_character_
+)
+
+
 
 saveRDS(bfa_baseline_exit, "bfa_baseline_exit.rds")
 orderly_artefact(
