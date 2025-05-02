@@ -5,6 +5,7 @@ library(orderly2)
 library(readr)
 library(tidylog)
 library(tidyr)
+
 ## Data dictionary
 ## https://microdata.worldbank.org/index.php/catalog/2825/data-dictionary/F1?file_name=do_anc_f3_data
 indir <- "resources/drc/baseline/COD_2015_HRBFIE-FBL_v01_M_CSV"
@@ -17,28 +18,154 @@ drc_baseline_dco <- rename(
   drc_baseline_dco,
   province = f3_id1, ## provice; 12 of these in DRC
   district = f3_id2,
-  health_zone = zs_id, 
-  ## Cannot use the other id columns because apart from the fact that the
-  ## breakdown is inconsistent with the online data dictionary (which is true for  ## all the columns), they contain codes are that not present in any mapping.
-  ## f1_00_01, f1_00_04 are not present in the data dictionary
-  ## So I don't know what they mean.
-  ## f3_00_05 is supposed to be health facility type
-  ## however, it has 875 1s, 223 2s and 325 NAs; so I don't think it is
-  ## health facility type.
-  health_facility_type = f3_00_05,
-  milieu_of_residence = f3_00_07,
-  code_enqueteur = f3_00_08,
-  date_of_visit = f3_00_09,
-  hcw_qualification = f3_00_11,
-  ## excluding this one; 0 if this is the first ANC
-  num_prev_anc_for_this_pregnancy = f3_01_02,
+  health_zone = zs_id,
+  ## 1094 NAs in health_facility_type;
+  health_facility_type = f1_00_01,
+  health_facility_status = f1_00_04
+)
+
+drc_baseline_dco$health_facility_status <- case_when(
+  drc_baseline_dco$health_facility_status == 1 ~ "Public",
+  drc_baseline_dco$health_facility_status == 2 ~ "Private for profit",
+  drc_baseline_dco$health_facility_status == 3 ~ "Private not for profit",
+  drc_baseline_dco$health_facility_status == 4 ~ "Faith-based",
+  drc_baseline_dco$health_facility_status == 5 ~ "Public-private partnership",
+  TRUE ~ as.character(drc_baseline_dco$health_facility_status)
+) 
+
+drc_baseline_dco <- rename(
+  drc_baseline_dco,
+  milieu_of_residence = f3_00_07
+)
+
+drc_baseline_dco$milieu_of_residence <- case_when(
+  drc_baseline_dco$milieu_of_residence == 1 ~ "Urban",
+  drc_baseline_dco$milieu_of_residence == 2 ~ "Rural",
+  TRUE ~ as.character(drc_baseline_dco$milieu_of_residence)
+)
   
-  pregnancy_in_weeks = f3_01_03,
-  first_pregnancy = f3_01_04,
+drc_baseline_dco <- rename(
+  drc_baseline_dco,
+  date_of_visit = f3_00_09
+)
+
+drc_baseline_dco <- rename(
+  drc_baseline_dco,
+  num_prev_anc_visits = f3_01_02
+  ## excluding this one; 0 if this is the first ANC
+)
+
+drc_baseline_dco$first_anc <- case_when(
+  drc_baseline_dco$num_prev_anc_visits == 0 ~ "yes",
+  drc_baseline_dco$num_prev_anc_visits > 0 ~ "no",
+  TRUE ~ NA_character_
+) 
+
+drc_baseline_dco <- rename(
+  drc_baseline_dco,
+  pregnancy_in_weeks = f3_01_03
+)
+
+drc_baseline_dco$pregnancy_in_weeks <- case_when(
+  drc_baseline_dco$pregnancy_in_weeks %in% c(98, -999999) ~ NA_integer_,
+  TRUE ~ drc_baseline_dco$pregnancy_in_weeks
+)
+
+drc_baseline_dco$trimester <- ifelse(
+  drc_baseline_dco$pregnancy_in_weeks < 13,
+  "First Trimester",
+   ifelse(
+     drc_baseline_dco$pregnancy_in_weeks < 28,
+     "Second Trimester", "Third Trimester"
+   )
+)
+  
+drc_baseline_dco <- rename(
+  drc_baseline_dco,
+  first_pregnancy = f3_01_04
+)
+
+drc_baseline_dco <- rename(
+  drc_baseline_dco,
   hcw_sex = f3_01_06,
   hcw_qualification = f3_01_07,
-  preciser_si_autre_qualification = f3_01_07_other,
+  hcw_qualification_other = f3_01_07_other
+)
+
+drc_baseline_dco$hcw_sex <- case_when(
+  drc_baseline_dco$hcw_sex %in% 1 ~ "Male",
+  drc_baseline_dco$hcw_sex %in% 2 ~ "Female",
+  TRUE ~ NA_character_
+)
+
+drc_baseline_dco$hcw_qualification <- case_when(
+  drc_baseline_dco$hcw_qualification == 1 ~ "Doctor",
+  drc_baseline_dco$hcw_qualification %in% c(2, 3, 4) ~ "Nurse",
+  drc_baseline_dco$hcw_qualification == 5 ~ "Lab technician",
+  drc_baseline_dco$hcw_qualification == 6 ~ "Midwife/Obstetrician",
+  drc_baseline_dco$hcw_qualification == 97 ~ "Other",
+  TRUE ~ as.character(drc_baseline_dco$hcw_qualification)
+)
+
+drc_baseline_dco <- rename(
+  drc_baseline_dco,
   start_time_of_consultation = f3_02_01,
+  end_time_of_consultation = f3_02_20,
+  consult_length = f3_02_20m
+)
+
+drc_baseline_dco <- mutate(
+  drc_baseline_dco,
+  across(
+    c(start_time_of_consultation,end_time_of_consultation),
+    ~ sprintf("%04d", .)))
+
+drc_baseline_dco <- mutate(
+  drc_baseline_dco,
+  across(
+    c(start_time_of_consultation,end_time_of_consultation),
+    ~ case_when(
+      . %in% c(-999999, 0) ~ NA_character_,
+      TRUE ~ as.character(.)
+    )
+  )
+)
+
+drc_baseline_dco$consult_length <- case_when(
+  drc_baseline_dco$consult_length < 0 ~ NA,
+  TRUE ~ drc_baseline_dco$consult_length
+)
+
+time_vec <- drc_baseline_dco$start_time_of_consultation
+drc_baseline_dco$consult_start_formatted <- hm(
+  paste0(substr(time_vec, 1, 2), ":", substr(time_vec, 3, 4))
+)
+
+time_vec <- drc_baseline_dco$end_time_of_consultation
+drc_baseline_dco$consult_end_formatted <- hm(
+  paste0(substr(time_vec, 1, 2), ":", substr(time_vec, 3, 4))
+)
+## Find rows where the end time is before the start time
+## This is likely a data entry error
+idx <- which(drc_baseline_dco$consult_end_formatted < drc_baseline_dco$consult_start_formatted)
+tmp <- drc_baseline_dco$consult_end_formatted[idx]
+drc_baseline_dco$consult_end_formatted[idx] <-
+  drc_baseline_dco$consult_start_formatted[idx]
+drc_baseline_dco$consult_start_formatted[idx] <- tmp
+
+drc_baseline_dco$consult_length_calc <-
+  time_length(drc_baseline_dco$consult_end_formatted - drc_baseline_dco$consult_start_formatted, unit = "minute")
+
+
+## 131 rows where consult_length and consult_length_calc different
+## Having checked the start and end times, we can assume that the
+## consult_length is incorrect, assuming the times are correct.
+
+
+
+
+drc_baseline_dco <- rename(
+  drc_baseline_dco,
   hcw_introduced_name = f3_02_02a,
   hcw_introduced_professional_grade = f3_02_02b,
   hcw_explained_procedure. = f3_02_03a,
@@ -141,40 +268,39 @@ drc_baseline_dco <- rename(
   hcw_recorded_in_health_booklet = f3_02_18,
   consultation_outcome = f3_02_19,
 
-  end_time_of_consultation = f3_02_20,
-  consult_length = f3_02_20m,
+
+  
   consultation_language = f3_02_21,
   consultation_language_other = f3_02_21_other
 )
 
-drc_baseline_dco$department_val  <- case_when(
-  drc_baseline_dco$department == 1 ~ "Bouenza",
-  drc_baseline_dco$department == 2 ~ "Brazzaville",
-  drc_baseline_dco$department == 3 ~ "Cuvette",
-  drc_baseline_dco$department == 4 ~ "Cuvette-Ouest",
-  drc_baseline_dco$department == 5 ~ "Kouilou",
-  drc_baseline_dco$department == 6 ~ "Lékoumou",
-  drc_baseline_dco$department == 7 ~ "Likouala",
-  drc_baseline_dco$department == 8 ~ "Niari",
-  drc_baseline_dco$department == 9 ~ "Plateaux",
-  drc_baseline_dco$department == 10 ~ "Pointe-Noire",
-  drc_baseline_dco$department == 11 ~ "Pool",
-  drc_baseline_dco$department == 12 ~ "Sangha",
-  TRUE ~ as.character(drc_baseline_dco$department) 
+
+
+drc_baseline_dco <- mutate(
+  drc_baseline_dco,
+  across(
+    hcw_introduced_name:hcw_recorded_in_health_booklet,
+    ~ factor(., levels = c(1, 2), labels = c("yes", "no"))
+  )
 )
 
-drc_baseline_dco$hcw_qualification <- case_when(
-  drc_baseline_dco$hcw_qualification == 1 ~ "Doctor",
-  drc_baseline_dco$hcw_qualification == 2 ~ "State Registered Nurse",
-  drc_baseline_dco$hcw_qualification == 3 ~ "Health Assistant",
-  drc_baseline_dco$hcw_qualification == 4 ~ "Health Technician",
-  drc_baseline_dco$hcw_qualification == 5 ~ "Midwife / Birth Attendant",
-  drc_baseline_dco$hcw_qualification == 7 ~ "Other",
-  TRUE ~ as.character(drc_baseline_dco$hcw_qualification)
+
+drc_baseline_dco$province <- case_when(
+  drc_baseline_dco$province == 1 ~ "Bandundu",
+  drc_baseline_dco$province == 2 ~ "Ecuador",
+  drc_baseline_dco$province == 3 ~ "Katanga",
+  drc_baseline_dco$province == 4 ~ "Maniema",
+  drc_baseline_dco$province == 5 ~ "Katanga (comparison)",
+  drc_baseline_dco$province == 6 ~ "North Kivu",
+  drc_baseline_dco$province == 7 ~ "South Kivu"
+  TRUE ~ as.character(drc_baseline_dco$province) 
 )
 
-# Save cleaned dataset
-saveRDS(data, "cleaned_dataset.rds")
+saveRDS(drc_baseline_dco, "drc_dco_2015.rds")
+orderly_artefact(
+  files = c("drc_dco_2015.rds"),
+  description = "DRC DCO 2015"
+)
 
 ### Midline survey data
 indir <- "resources/drc/midline-survey/COD_2018_HRBFIE-FML_v01_M_CSV" 
