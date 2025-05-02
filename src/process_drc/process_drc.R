@@ -292,7 +292,7 @@ drc_baseline_dco$province <- case_when(
   drc_baseline_dco$province == 4 ~ "Maniema",
   drc_baseline_dco$province == 5 ~ "Katanga (comparison)",
   drc_baseline_dco$province == 6 ~ "North Kivu",
-  drc_baseline_dco$province == 7 ~ "South Kivu"
+  drc_baseline_dco$province == 7 ~ "South Kivu",
   TRUE ~ as.character(drc_baseline_dco$province) 
 )
 
