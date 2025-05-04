@@ -35,6 +35,20 @@ citation-location: margin         # <2>
 ---
 ```
 
+# Data sources summary
+
+|Id  |Data|Ingested|
+|:-|:----|-:|
+|2713|Benin - Health Results-Based Financing Impact Evaluation Survey 2010-2011, Baseline - 2010||
+|2732|Burkina Faso - Health Results-Based Financing Impact Evaluation 2013, Health Facility Baseline Survey - 2013||
+|2733|Burkina Faso - Results-Based Financing Impact Evaluation Health Facility 2017, Endline Survey - 2017||
+|2735|Cameroon - Health Results-Based Financing Impact Evaluation 2012, Health Facility Baseline Survey - 2012||
+|2734|Central African Republic - Health Results-Based Financing Impact Evaluation 2012, Health Facility Baseline Survey - 2012||
+|2711|Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2021 -2022, Health Facility Follow-Up Survey - 2021||
+|2736|Congo, Rep. - Health Results-Based Financing Impact Evaluation 2014, Baseline Survey - 2014||
+|2768|Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2015, Health Facility Baseline Survey - 2015||
+|2731|Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2018, Health Facility Midline Survey - 2018||
+|2712|Lesotho - Health Results Based Financing Impact Evaluation 2015, Health Facility Baseline Survey - 2015||
 
 # Benin
 

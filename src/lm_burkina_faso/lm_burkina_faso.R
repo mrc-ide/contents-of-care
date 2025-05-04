@@ -31,8 +31,8 @@ full_model <- function(df) {
 
 
 
-orderly_dependency("process_burkina_faso", "latest", files = c("bfa_baseline_dco.rds"))
-bfa_baseline_dco <- readRDS("bfa_baseline_dco.rds")
+orderly_dependency("process_burkina_faso", "latest", files = c("bfa_dco.rds"))
+bfa_baseline_dco <- readRDS("bfa_dco.rds")
 
 
 bfa_baseline_small <- select(

@@ -198,14 +198,14 @@ r_squared <- map2_dbl(predicted_y, bfa_baseline_split, function(pred, x) {
 
 summary_table <- separate(
   summary_table, datacut,
-  into = c("facility_type", "first_anc", "trimester"), sep = "_"
+  into = c("facility_type","trimester", "first_anc"), sep = "_"
 )
 
 r_squared <- tidy(r_squared)
 
 r_squared <- separate(
   r_squared, names,
-  into = c("facility_type", "first_anc", "trimester"), sep = "_"
+  into = c("facility_type", "trimester", "first_anc"), sep = "_"
 )
 r_squared$x <- scales::percent(r_squared$x)
 ##############################################
@@ -217,7 +217,10 @@ p <- ggplot(x, aes(y = term, x = mean)) +
   geom_vline(xintercept = 0, linetype = "dashed") +
   geom_errorbarh(aes(xmin = mean - se, xmax = mean + se), height = 0) +
   geom_point() +
-  facet_grid(trimester ~ first_anc) +
+  facet_grid(
+    first_anc ~ trimester,
+    labeller = labeller(.rows = label_both, .cols = label_value)
+  ) +
   theme_minimal() +
   labs(
     title = "Bootstrapped LASSO Coefficients",

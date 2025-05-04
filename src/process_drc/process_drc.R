@@ -20,17 +20,17 @@ drc_baseline_dco <- rename(
   district = f3_id2,
   health_zone = zs_id,
   ## 1094 NAs in health_facility_type;
-  health_facility_type = f1_00_01,
-  health_facility_status = f1_00_04
+  facility_type = f1_00_01,
+  facility_status = f1_00_04
 )
 
-drc_baseline_dco$health_facility_status <- case_when(
-  drc_baseline_dco$health_facility_status == 1 ~ "Public",
-  drc_baseline_dco$health_facility_status == 2 ~ "Private for profit",
-  drc_baseline_dco$health_facility_status == 3 ~ "Private not for profit",
-  drc_baseline_dco$health_facility_status == 4 ~ "Faith-based",
-  drc_baseline_dco$health_facility_status == 5 ~ "Public-private partnership",
-  TRUE ~ as.character(drc_baseline_dco$health_facility_status)
+drc_baseline_dco$facility_status <- case_when(
+  drc_baseline_dco$facility_status == 1 ~ "Public",
+  drc_baseline_dco$facility_status == 2 ~ "Private for profit",
+  drc_baseline_dco$facility_status == 3 ~ "Private not for profit",
+  drc_baseline_dco$facility_status == 4 ~ "Faith-based",
+  drc_baseline_dco$facility_status == 5 ~ "Public-private partnership",
+  TRUE ~ as.character(drc_baseline_dco$facility_status)
 ) 
 
 drc_baseline_dco <- rename(
@@ -85,6 +85,12 @@ drc_baseline_dco <- rename(
   first_pregnancy = f3_01_04
 )
 
+drc_baseline_dco$first_pregnancy <- factor(
+  drc_baseline_dco$first_pregnancy,
+  levels = c(1, 2), labels = c("yes", "no")
+)
+
+
 drc_baseline_dco <- rename(
   drc_baseline_dco,
   hcw_sex = f3_01_06,
@@ -104,6 +110,7 @@ drc_baseline_dco$hcw_qualification <- case_when(
   drc_baseline_dco$hcw_qualification == 5 ~ "Lab technician",
   drc_baseline_dco$hcw_qualification == 6 ~ "Midwife/Obstetrician",
   drc_baseline_dco$hcw_qualification == 97 ~ "Other",
+  drc_baseline_dco$hcw_qualification %in% -999999 ~ NA_character_,
   TRUE ~ as.character(drc_baseline_dco$hcw_qualification)
 )
 
@@ -113,6 +120,22 @@ drc_baseline_dco <- rename(
   end_time_of_consultation = f3_02_20,
   consult_length = f3_02_20m
 )
+
+## One of the start times is recorded as 100; end time here is 1020
+## so start time is most likely 1000; Fixing this else it would be
+## converted to 0100 i.e. 1am
+drc_baseline_dco$start_time_of_consultation <- case_when(
+  drc_baseline_dco$start_time_of_consultation %in% 100 ~ 1000,
+  TRUE ~ drc_baseline_dco$start_time_of_consultation
+)
+
+## 3 rows where start and end times are same; these are likely
+## data entry errors, and should be excluded.
+drc_baseline_dco <- filter(
+  drc_baseline_dco,
+  start_time_of_consultation != end_time_of_consultation
+)
+
 
 drc_baseline_dco <- mutate(
   drc_baseline_dco,
@@ -283,6 +306,9 @@ drc_baseline_dco <- mutate(
     ~ factor(., levels = c(1, 2), labels = c("yes", "no"))
   )
 )
+
+  
+
 
 
 drc_baseline_dco$province <- case_when(
