@@ -1,0 +1,118 @@
+\documentclass{article}
+\usepackage{geometry}
+\date{}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup[subfigure]{font={bf,small}, skip=1pt, margin=-0.7cm, singlelinecheck=false}
+\usepackage[maxnames=2,minnames=1, sorting=none, giveninits=true,style=numeric-comp]{biblatex} 
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{mwe}
+\usepackage{tabularx,booktabs}
+\usepackage{xr}
+\usepackage{soul}
+\usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
+\usepackage[capitalise]{cleveref}
+\crefname{sisec}{Suppl Sec.}{Suppl Secs.}
+\crefname{sifig}{Fig.}{Figs.}
+\crefname{sitab}{Suppl Tab.}{Suppl Tabs.}
+\renewcommand{\thesubfigure}{\Alph{subfigure}}
+\newcommand\pcref[1]{(\cref{#1})}
+\externaldocument{si}
+%%% Remove the next two lines if you want the figures at their place    
+%\usepackage[figuresonly,nolists,nomarkers]{endfloat}
+%\renewcommand{\processdelayedfloats}{}
+\addbibresource{coc.bib}
+\begin{document}
+\vspace*{0.2in}
+
+
+\title{}
+\maketitle
+\section*{Abstract}
+\textbf{Background}: 
+
+\textbf{Methods}:
+
+\textbf{Findings}: 
+
+\textbf{Interpretation}: 
+
+\section*{Introduction}
+\section*{Figures and Tables}
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{}r >{\raggedright\arraybackslash}p{10cm} c@{}}
+\toprule
+\textbf{Id} & \textbf{Data} & \textbf{DCO (n)} \\
+\midrule
+2713 & Benin - Health Results-Based Financing Impact Evaluation Survey 2010-2011, Baseline - 2010 & 701\\
+2732 & Burkina Faso - Health Results-Based Financing Impact Evaluation 2013, Health Facility Baseline Survey - 2013 & 4114\\
+2733 & Burkina Faso - Results-Based Financing Impact Evaluation Health Facility 2017, Endline Survey - 2017 & \\
+2735 & Cameroon - Health Results-Based Financing Impact Evaluation 2012, Health Facility Baseline Survey - 2012 & \\
+2734 & Central African Republic - Health Results-Based Financing Impact Evaluation 2012, Health Facility Baseline Survey - 2012 & \\
+2711 & Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2021 -2022, Health Facility Follow-Up Survey - 2021 & \\
+2736 & Congo, Rep. - Health Results-Based Financing Impact Evaluation 2014, Baseline Survey - 2014 & \\
+2768 & Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2015, Health Facility Baseline Survey - 2015 & 1425 \\
+2731 & Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2018, Health Facility Midline Survey - 2018 & \\
+2712 & Lesotho - Health Results Based Financing Impact Evaluation 2015, Health Facility Baseline Survey - 2015 & \\
+\bottomrule
+\end{tabular}
+\caption{Data sources}
+\label{tab:data sources}
+\end{table}
+
+\begin{figure}[p]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{benin_consult_length_by_overall.png}
+    \subcaption{}
+  \end{subfigure}   
+  \hfill 
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{bfa_consult_length_by_overall.png}
+    \subcaption{}
+  \end{subfigure}
+
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{drc_2015_consult_length_by_overall.png}
+    \subcaption{}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{drc_2015_consult_length_by_overall.png}
+    \subcaption{}
+  \end{subfigure}   
+  \caption{Length of antenatal consultation in Benin, Burkina Faso, and Democratic Republic of Congo.}
+  \label{fig:anc length}
+\end{figure}
+
+
+\begin{figure}[p]
+  \centering
+    \includegraphics[width=\textwidth]{drc_2015_dco_lasso_coefficients.png}
+  \caption{Coefficients, DRC 2015, median and 95\% CrI}
+  \label{fig:anc length}
+\end{figure}
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{4cm} >{\centering\arraybackslash}p{2cm} >{\centering\arraybackslash}p{3cm} >{\raggedleft\arraybackslash}p{2cm}@{}}
+    \toprule
+    \textbf{Facility type} & \textbf{First ANC} & \textbf{Trimester} & \textbf{R\textsuperscript{2}} \\
+    \midrule
+    Public & no  & Second Trimester & 30.4\% \\
+    Public-private partnership & no  & Second Trimester & 49.6\% \\
+    Public & yes & Second Trimester & 53.0\% \\
+    Public & no  & Third Trimester  & 27.9\% \\
+    Public-private partnership & no  & Third Trimester  & 33.4\% \\
+    Public & yes & Third Trimester  & 37.5\% \\
+    \bottomrule
+  \end{tabular}
+  \caption{R2}
+  \label{tab:drc 2015 dco r2}
+\end{table}
+
+
+\end{document}

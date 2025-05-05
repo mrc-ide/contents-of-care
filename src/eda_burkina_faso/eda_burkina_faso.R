@@ -12,10 +12,9 @@ library(snakecase)
 library(table1)
 
 orderly_dependency(
-  "process_burkina_faso", "latest",
-  files = c("bfa_baseline_dco.rds")
+  "process_burkina_faso", "latest", files = c("bfa_dco.rds")
 )
-bfa_baseline_dco <- readRDS("bfa_baseline_dco.rds")
+bfa_baseline_dco <- readRDS("bfa_dco.rds")
 outfile_prefix <- "bfa_consult_length_by"
 
 out <- summary(bfa_baseline_dco$consult_length) |>
