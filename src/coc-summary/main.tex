@@ -91,23 +91,35 @@
 
 \begin{figure}[p]
   \centering
+  \includegraphics[width=\textwidth]{benin_dco_lasso_coefficients.png}
+  \caption{Coefficients, Benin, median and 95\% CrI}
+  \label{fig:benin dco lm}
+\end{figure}
+
+
+\begin{figure}[p]
+  \centering
     \includegraphics[width=\textwidth]{drc_2015_dco_lasso_coefficients.png}
   \caption{Coefficients, DRC 2015, median and 95\% CrI}
-  \label{fig:anc length}
+  \label{fig:drc 2015 dco lm}
 \end{figure}
+
+
 
 \begin{table}[ht]
   \centering
-  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{4cm} >{\centering\arraybackslash}p{2cm} >{\centering\arraybackslash}p{3cm} >{\raggedleft\arraybackslash}p{2cm}@{}}
+  \begin{tabular}{llllr}
     \toprule
-    \textbf{Facility type} & \textbf{First ANC} & \textbf{Trimester} & \textbf{R\textsuperscript{2}} \\
+    \textbf{country} & \textbf{Facility type} & \textbf{First ANC} & \textbf{Trimester} & \textbf{R\textsuperscript{2}} \\
     \midrule
-    Public & no  & Second Trimester & 30.4\% \\
-    Public-private partnership & no  & Second Trimester & 49.6\% \\
-    Public & yes & Second Trimester & 53.0\% \\
-    Public & no  & Third Trimester  & 27.9\% \\
-    Public-private partnership & no  & Third Trimester  & 33.4\% \\
-    Public & yes & Third Trimester  & 37.5\% \\
+    Benin & Former Communal Health Center & no & & \\
+
+    DRC & Public & no  & Second Trimester & 30.4\% \\
+    DRC & Public-private partnership & no  & Second Trimester & 49.6\% \\
+    DRC & Public & yes & Second Trimester & 53.0\% \\
+    DRC & Public & no  & Third Trimester  & 27.9\% \\
+    DRC & Public-private partnership & no  & Third Trimester  & 33.4\% \\
+    DRC & Public & yes & Third Trimester  & 37.5\% \\
     \bottomrule
   \end{tabular}
   \caption{R2}

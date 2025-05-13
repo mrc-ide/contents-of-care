@@ -12,7 +12,7 @@ orderly_dependency(
   )
 )
 
-orderly_dependency("lm_benin", "latest", c("benin_lasso_bootstrapped.png"))
+orderly_dependency("lm_benin", "latest", c("benin_dco_lasso_coefficients.png"))
 
 orderly_dependency("lm_burkina_faso", "latest", c("bfa_lasso_bootstrapped.png"))
 
@@ -36,5 +36,5 @@ orderly_dependency(
   "lm_drc", "latest",c("drc_2015_dco_lasso_coefficients.png")
 )
 
-quarto_render("summary-presentation.qmd")
+##quarto_render("summary-presentation.qmd")
 system("pdflatex main.tex")

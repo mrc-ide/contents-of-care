@@ -6,6 +6,7 @@ library(readr)
 library(tidylog)
 library(tidyr)
 
+## Dataset ID: 2768
 ## Data dictionary
 ## https://microdata.worldbank.org/index.php/catalog/2825/data-dictionary/F1?file_name=do_anc_f3_data
 indir <- "resources/drc/baseline/COD_2015_HRBFIE-FBL_v01_M_CSV"
@@ -327,6 +328,18 @@ orderly_artefact(
   files = c("drc_dco_2015.rds"),
   description = "DRC DCO 2015"
 )
+
+## Baseline health facility data
+## After 3.03 and before 3.07, there are questions about the number of
+## personnel for different posts. 4 is a list of personnel
+## 6.19 to 6.29 are about ANC services
+## 7.01: Do you know the size of the population served by your facility?
+## Questions after that are about number of patients
+## Questions starting 13.07 are about availability of equipment for ANC
+
+## Congo, Rep. - Health Results-Based Financing Impact Evaluation 2014, Baseline Survey - 2014
+## 2736
+## Still called baseline
 
 ### Midline survey data
 indir <- "resources/drc/midline-survey/COD_2018_HRBFIE-FML_v01_M_CSV" 
