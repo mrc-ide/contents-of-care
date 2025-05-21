@@ -185,3 +185,6 @@ shared
 *.pdf
 *.png
 *.svg
+src/coc-summary/main.aux
+src/coc-summary/main.bcf
+src/coc-summary/main.run.xml
