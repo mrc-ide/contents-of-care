@@ -1,7 +1,7 @@
 \documentclass{article}
 \usepackage{geometry}
 \date{}
-\usepackage{caption}
+\usepackage[list=off]{caption}
 \usepackage{subcaption}
 \captionsetup[subfigure]{font={bf,small}, skip=1pt, margin=-0.7cm, singlelinecheck=false}
 \usepackage[maxnames=2,minnames=1, sorting=none, giveninits=true,style=numeric-comp]{biblatex} 
@@ -81,7 +81,7 @@
   \end{subfigure}
   \hfill
   \begin{subfigure}[b]{0.45\textwidth}
-    \includegraphics[width=\textwidth]{drc_2015_consult_length_by_overall.png}
+    \includegraphics[width=\textwidth]{drc_midline_consult_length_by_overall.png}
     \subcaption{}
   \end{subfigure}   
   \caption{Length of antenatal consultation in Benin, Burkina Faso, and Democratic Republic of Congo.}
@@ -101,6 +101,24 @@
   \centering
     \includegraphics[width=\textwidth]{drc_2015_dco_lasso_coefficients.png}
   \caption{Coefficients, DRC 2015, median and 95\% CrI}
+  \label{fig:drc 2015 dco lm}
+\end{figure} 
+
+
+\begin{figure}[p]
+  \captionsetup{singlelinecheck=off}
+  \centering
+  \includegraphics[width=\textwidth]{drc_midline_dco_lasso_coefficients.png}
+  \caption{DRC midline survey \begin{itemize}
+    \item The explanatory power of the variables is low, with deviance ranging from 0 to 46.7\% across data strata.
+    \item All included variables have median coefficient of zero.
+    \item However, most variables have skewed credible intervals that are bounded away from zero, suggesting modest but consistent effect.
+    \item Of note, for patients in second trimester having their first consultation, male HCWs were associated with smaller consultation time (ref female HCWs).
+    \item In follow-up consultations, male HCWs are associated with increased length, regardless of the trimester.
+    \item Compared with doctors, nurses were associated with increased appointment length in second trimester, first ANC and decreased length in third trimester, first ANC
+      (CrI spans zero in follow-up for both trimesters).
+    \item Strong regional differences (see estimates for province and language), but significance needs more context.
+    \end{itemize}}
   \label{fig:drc 2015 dco lm}
 \end{figure}
 
