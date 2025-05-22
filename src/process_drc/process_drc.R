@@ -111,8 +111,7 @@ drc_baseline_dco$hcw_qualification <- case_when(
   drc_baseline_dco$hcw_qualification == 5 ~ "Lab technician",
   drc_baseline_dco$hcw_qualification == 6 ~ "Midwife/Obstetrician",
   drc_baseline_dco$hcw_qualification == 97 ~ "Other",
-  drc_baseline_dco$hcw_qualification %in% -999999 ~ NA_character_,
-  TRUE ~ as.character(drc_baseline_dco$hcw_qualification)
+  TRUE ~ NA_character_
 )
 
 drc_baseline_dco <- rename(
@@ -308,6 +307,15 @@ drc_baseline_dco <- mutate(
   )
 )
 
+drc_baseline_dco$consultation_language <- case_when(
+  drc_baseline_dco$consultation_language == 2 ~ "Lingala",
+  drc_baseline_dco$consultation_language == 3 ~ "Swahili",
+  drc_baseline_dco$consultation_language == 4 ~ "Kikongo",
+  drc_baseline_dco$consultation_language == 5 ~ "Kituba",
+  ## Group the languages with small number of observations into Other
+  drc_baseline_dco$consultation_language %in% c(1, 7, 97) ~ "Other",
+  TRUE ~ NA_character_
+)
   
 
 

@@ -1,4 +1,3 @@
-
 library(broom)
 library(dplyr)
 library(ggforce)
@@ -85,19 +84,26 @@ best_lambda <- map(drc_baseline_split, function(x) {
 })
 
 lasso_fit <- map2(drc_baseline_split, best_lambda, function(x, bestl) {
-
-  if (nrow(x) == 0) return(NULL)
+  if (nrow(x) == 0) {
+    return(NULL)
+  }
   cli::cli_alert("Retained rows {nrow(x)}")
   out <- full_model(x)
   glmnet(out$x_matrix, out$y_vec, alpha = 1, lambda = bestl)
-  
 })
 
-coefficients <- map_dfr(lasso_fit, function(x) {
+saveRDS(lasso_fit, "drc_2015_dco_lasso_fits.rds")
+orderly_artefact(
+  files = "drc_2015_dco_lasso_fits.rds",
+  description = "LASSO fits"
+)
+
+
+coefficients <- map(lasso_fit, function(x) {
   out <- as.data.frame(as.matrix(coef(x)))
   out <- tibble::rownames_to_column(out, "term")
   out
-}, .id = "datacut")
+})
 
 ##############################################
 # 2. Bootstrapping with rsample
@@ -122,7 +128,6 @@ boot_samples <- imap(boot_samples_extra, function(boot, datacut) {
         "hcw_qualification", "hcw_sex"
       ), function(var) length(unique(x[[var]])) > 1
     )
-    
     if (all(nlevels)) {
       return(list(split = split, id = id))
     } else {
@@ -161,70 +166,56 @@ boot_coefs <- map2_dfr(boot_samples, best_lambda, function(boot, bestl) {
 ##############################################
 # 3. Summarise bootstrapped estimates
 ##############################################
-summary_table <- boot_coefs %>%
-  group_by(datacut, term) %>%
+summary_table <- boot_coefs |>
+  group_by(datacut, term) |>
   summarise(
     mean = mean(s0),
     se = sd(s0) / sqrt(n() - 1),
     mid = quantile(s0, 0.5),
     lower = quantile(s0, 0.025),
     upper = quantile(s0, 0.975)   
-  ) %>%
-  arrange(desc(abs(mean)))
+  ) 
 
-print(summary_table)
-
-##############################################
-### 4. RMSE and R-squared
-##############################################
-predicted_y <- map2(lasso_fit, drc_baseline_split, function(fit, x) {
-  if (nrow(x) == 0) return(NULL)
-  out <- full_model(x)
-  predict(fit, newx = out$x_matrix)
-})
-
-rmse <- map2_dbl(predicted_y, drc_baseline_split, function(pred, x) {
-  if (nrow(x) == 0) {
-    return(NULL)
-  }
-  sqrt(mean((x$log_consult_length - pred)^2))
-})
-
-r_squared <- map2_dbl(predicted_y, drc_baseline_split, function(pred, x) {
-  if (nrow(x) == 0) {
-    return(NULL)
-  }
-  cor(x$log_consult_length, pred)^2
-})
 
 summary_table <- separate(
   summary_table, datacut,
   into = c("facility_type", "first_anc", "trimester"), sep = "_"
 )
 
-r_squared <- tidy(r_squared)
-r_squared <- separate(
-  r_squared, names,
+coefficients <- separate(
+  coefficients, datacut,
   into = c("facility_type", "first_anc", "trimester"), sep = "_"
 )
-r_squared$x <- scales::percent(r_squared$x)
-##############################################
-# 5. Visualise bootstrapped intervals
-##############################################
+
 orderly_shared_resource("utils.R")
 source("utils.R")
 
 x <- filter(summary_table, term != "(Intercept)")
+x$first_anc <- factor(
+  x$first_anc,
+  levels = c("yes", "no"),
+  labels = c("First ANC", "Follow-up ANC"),
+  ordered = TRUE
+)
 
-p <- ggplot(x, aes(y = term, x = mid)) +
+y <- filter(coefficients, term != "(Intercept)")
+y$first_anc <- factor(
+  y$first_anc,
+  levels = c("yes", "no"),
+  labels = c("First ANC", "Follow-up ANC"),
+  ordered = TRUE
+)
+
+p <- ggplot() +
   geom_vline(xintercept = 0, linetype = "dashed") +
-  geom_errorbarh(
-    aes(xmin = lower, xmax = upper),
+  geom_point(data = x, aes(y = term, x = mid)) +
+  geom_errorbarh(data = x, 
+    aes(y = term, xmin = lower, xmax = upper),
     height = 0
-  ) +
-  geom_point() +
+    ) +
+  geom_point(data = y, aes(y = term, x = s0), shape = 4) + 
   facet_grid(
-    facility_type ~ trimester + first_anc
+     trimester ~ facility_type + first_anc
     ##labeller = labeller(.rows = label_both, .cols = label_value)
   ) +
   theme_manuscript() +

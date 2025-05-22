@@ -67,6 +67,11 @@ drc_midline_small$consultation_language <- recode(
 
 drc_midline_small$consultation_language <- recode(
   drc_midline_small$consultation_language,
+  "Lingala" = "Other"
+)
+
+drc_midline_small$consultation_language <- recode(
+  drc_midline_small$consultation_language,
   "Autre, à préciser" = "Other"
 )
 
