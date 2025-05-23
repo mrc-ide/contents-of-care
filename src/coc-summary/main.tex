@@ -100,7 +100,16 @@
 \begin{figure}[p]
   \centering
     \includegraphics[width=\textwidth]{drc_2015_dco_lasso_coefficients.png}
-  \caption{Coefficients, DRC 2015, median and 95\% CrI}
+    \caption{Coefficients, DRC 2015  \begin{itemize}
+      \item The explanatory power of the variables is modest, with deviance ranging from 25.07 to 48.27\% across data strata.
+      \item Most included variables have median coefficient of zero or credible intervals that span 0.
+      \item However, most variables have skewed credible intervals that are bounded away from zero, suggesting modest but consistent effect.
+      \item Effect size of regions and consultation language is large, but significance needs more context. (see attempt at hierarchical model); 
+      \item Of note, for patients in second trimester, male HCWs were associated with longer consultation time (ref female HCWs).
+      \item In follow-up consultations, male HCWs are associated with decreased length, regardless of the trimester.
+      \item Compared with doctors, nurses were associated with increased appointment length in second trimester, first ANC and decreased length in third trimester, first ANC
+        (CrI spans zero in follow-up for both trimesters).
+    \end{itemize}}
   \label{fig:drc 2015 dco lm}
 \end{figure} 
 

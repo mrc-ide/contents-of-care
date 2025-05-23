@@ -18,15 +18,17 @@ full_model <- function(df) {
   x_matrix <- model.matrix(log(consult_length_calc) ~ (
     province +
     milieu_of_residence +
+    facility_status +
     consultation_language +
     ## Pregnancy characteristics
     pregnancy_in_weeks +
-    factor(first_pregnancy) +
+    first_pregnancy +
     ## HCW characteristics
-    factor(hcw_qualification) +
-    factor(hcw_sex) + 
+    hcw_qualification +
+    hcw_sex + 
     ## Appointment characteristics
-    time_elapsed_since_start_of_day), data = df)[, -1]
+    time_elapsed_since_start_of_day 
+    ), data = df)[, -1]
 
   y_vec <- log(df$consult_length_calc)
 
@@ -59,12 +61,34 @@ drc_baseline_small <- select(
 
 drc_baseline_small$log_consult_length <- log(drc_baseline_small$consult_length_calc)
 
-set.seed(42)
+drc_baseline_small$province <- case_when(
+  drc_baseline_small$province %in% "Katanga (comparison)" ~ "Katanga",
+  TRUE ~ drc_baseline_small$province
+)
 
-## Stratify by facility type and first ANC; 97% of the observations are from government facilities
+drc_baseline_small$hcw_qualification <- case_when(
+  drc_baseline_small$hcw_qualification %in% "Lab technician" ~ "Other",
+  TRUE ~ drc_baseline_small$hcw_qualification
+)
+
+
+drc_baseline_small$facility_status <- case_match(
+  drc_baseline_small$facility_status,
+  "Public" ~ "Public",
+  c(
+    "Private not for profit", "Public-private partnership",
+    "Private for profit" 
+  ) ~ "Not public"
+)
+
+set.seed(42)
+## province is soaking up a lot of variation;
+## But we can't stratify by it because within each province, we have very limited
+## to no variation in other covariates.
+
 drc_baseline_split <- split(
   drc_baseline_small,
-  list(drc_dco_2015$facility_status, drc_dco_2015$first_anc,
+  list(drc_dco_2015$first_anc,
        drc_dco_2015$trimester),
   sep = "_"
 )
@@ -99,11 +123,11 @@ orderly_artefact(
 )
 
 
-coefficients <- map(lasso_fit, function(x) {
+coefficients <- map_dfr(lasso_fit, function(x) {
   out <- as.data.frame(as.matrix(coef(x)))
   out <- tibble::rownames_to_column(out, "term")
   out
-})
+}, .id = "datacut")
 
 ##############################################
 # 2. Bootstrapping with rsample
@@ -179,12 +203,12 @@ summary_table <- boot_coefs |>
 
 summary_table <- separate(
   summary_table, datacut,
-  into = c("facility_type", "first_anc", "trimester"), sep = "_"
+  into = c( "first_anc", "trimester"), sep = "_"
 )
 
 coefficients <- separate(
   coefficients, datacut,
-  into = c("facility_type", "first_anc", "trimester"), sep = "_"
+  into = c("first_anc", "trimester"), sep = "_"
 )
 
 orderly_shared_resource("utils.R")
@@ -213,20 +237,22 @@ p <- ggplot() +
     aes(y = term, xmin = lower, xmax = upper),
     height = 0
     ) +
-  geom_point(data = y, aes(y = term, x = s0), shape = 4) + 
+  geom_point(data = y, aes(y = term, x = s0), shape = 4) +
+  scale_y_discrete(labels = covariates_nice_names) +
   facet_grid(
-     trimester ~ facility_type + first_anc
+     trimester ~ first_anc
     ##labeller = labeller(.rows = label_both, .cols = label_value)
   ) +
   theme_manuscript() +
+  theme(
+    axis.title.y = element_blank(),
+  ) +
   labs(
-    title = "Bootstrapped LASSO Coefficients",
-    y = "Predictor",
-    x = "Median & 95% CrI"
+    title = "Bootstrapped LASSO Coefficients"
   ) 
 
 outfile <- "drc_2015_dco_lasso_coefficients"
-ggsave_manuscript(outfile, p, width = 9, height = 6)
+ggsave_manuscript(outfile, p, width = 12, height = 8)
 
 orderly_artefact(
   files = glue("{outfile}.png"), description = "LASSO coefficients"

@@ -2,9 +2,9 @@ library(brms)
 
 formula <- bf(
   log(consult_length_calc) ~
-    ## milieu_of_residence + Removed because of class imbalance
-    facility_status + 
-    consultation_language +
+    ## milieu_of_residence + ## Removed because of class imbalance
+    facility_status +
+    ## consultation_language + ## Removed because of weak global signal
     pregnancy_in_weeks +
     first_pregnancy +
     hcw_qualification +
@@ -12,6 +12,15 @@ formula <- bf(
     time_elapsed_since_start_of_day +
     (1 + consultation_language + facility_status | province)
 )
+
+drc_baseline_split <- split(
+  drc_baseline_small,
+  list(
+    drc_dco_2015$first_anc, drc_dco_2015$trimester
+  ),
+  sep = "_"
+)
+
 
 fits <- map(drc_baseline_split, function(x) {
   brm(
@@ -25,13 +34,6 @@ fits <- map(drc_baseline_split, function(x) {
 )})
 
 
-drc_baseline_split <- split(
-  drc_baseline_small,
-  list(
-    drc_dco_2015$first_anc, drc_dco_2015$trimester
-  ),
-  sep = "_"
-)
 
 
 coefs <- map_dfr(fits, function(fit) {
@@ -61,14 +63,7 @@ x$first_anc <- factor(
   ordered = TRUE
 )
 
-nice_names <- stringr::str_replace(
-  x$rowname,
-  pattern = "b_",
-  replacement = ""
-  )
 
-nice_names <- snakecase::to_title_case(nice_names)
-names(nice_names) <- x$rowname
 
 
 p <- ggplot() +
@@ -80,14 +75,12 @@ p <- ggplot() +
     height = 0
   ) +
   facet_grid(
-    trimester ~ first_anc
+    trimester ~ first_anc, scales = "free",
     ## labeller = labeller(.rows = label_both, .cols = label_value)
   ) +
   scale_y_discrete(
     breaks = c(
       "b_facility_statusPublic",
-      "b_facility_statusPublicMprivatepartnership",
-      "b_facility_statusPrivatenotforprofit",
       "b_consultation_languageLingala",
       "b_consultation_languageOther",
       "b_consultation_languageSwahili",
@@ -101,8 +94,6 @@ p <- ggplot() +
     ),
     labels = c(
       "HF Public",
-      "HF PP Partnership",
-      "HF Private NFP",
       "Consultation Language: Lingala",
       "Consultation Language: Other",
       "Consultation Language: Swahili",
@@ -116,10 +107,13 @@ p <- ggplot() +
     )
   ) +
   theme_manuscript() +
-  labs(
-    title = "Bootstrapped LASSO Coefficients",
-    y = "Predictor",
-    x = "Median & 95% CrI"
-  )
+  theme(
+    axis.title.y = element_blank(),
+  ) 
 
 map(fits, bayes_R2)
+
+
+
+
+
