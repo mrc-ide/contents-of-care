@@ -13,15 +13,6 @@ formula <- bf(
     (1 + consultation_language + facility_status | province)
 )
 
-drc_baseline_split <- split(
-  drc_baseline_small,
-  list(
-    drc_dco_2015$first_anc, drc_dco_2015$trimester
-  ),
-  sep = "_"
-)
-
-
 fits <- map(drc_baseline_split, function(x) {
   brm(
   formula = formula,
@@ -47,8 +38,6 @@ coefs <- separate(
   into = c("first_anc", "trimester"), sep = "_"
 )
 
-orderly_shared_resource("utils.R")
-source("utils.R")
 
 
 idx <- grepl(unique(coefs$rowname), pattern = "^b_")
@@ -107,11 +96,28 @@ p <- ggplot() +
     )
   ) +
   theme_manuscript() +
-  theme(
-    axis.title.y = element_blank(),
-  ) 
+  theme(axis.title.y = element_blank())
 
-map(fits, bayes_R2)
+ggsave_manuscript(
+  p,
+  filename = "drc_2015_dco_bayes_coefs",
+  width = 12, height = 8
+)
+orderly_artefact(
+  files = "drc_2015_dco_bayes_coefs.png",
+  description = "Bayes coefficients for DRC 2015 DCO model fits"
+)
+
+bayes_r2 <- map(fits, bayes_R2)
+saveRDS(bayes_r2, file = "drc_2015_dco_bayes_r2.rds")
+
+orderly_artefact(
+  files = "drc_2015_dco_bayes_r2.rds",
+  description = "Bayes R2 for DRC 2015 DCO model fits"
+)
+
+
+
 
 
 

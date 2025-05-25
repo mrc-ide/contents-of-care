@@ -33,7 +33,8 @@ orderly_dependency(
 )
 
 orderly_dependency(
-  "lm_drc", "latest",c("drc_2015_dco_lasso_coefficients.png")
+  "lm_drc", "latest",
+  c("drc_2015_dco_lasso_coefficients.png", "drc_2015_dco_bayes_coefs.png")
 )
 
 

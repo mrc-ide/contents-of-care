@@ -35,6 +35,38 @@
 
 \textbf{Methods}:
 
+\begin{align*}
+  \log(Y_{ij}) &= \mu_{ij} + \varepsilon_{ij}, \quad \varepsilon_{ij} \sim \mathcal{N}(0, \sigma^2) \\
+  \mu_{ij} &= \alpha_j + \\
+  & \beta_1 \cdot \text{facility\_status}_{ij} + \\
+  & \beta_2 \cdot \text{pregnancy\_in\_weeks}_{ij} + \\
+  & \beta_3 \cdot \text{first\_pregnancy}_{ij} + \\
+  & \beta_4 \cdot \text{hcw\_qualification}_{ij} + \\
+  & \beta_5 \cdot \text{hcw\_sex}_{ij} + \\ 
+  & \beta_6 \cdot \text{time\_of\_day}_{ij} \\
+  &\quad + u_{j1} \cdot \text{consultation\_language}_{ij} + \\
+  u_{j2} \cdot \text{facility\_status}_{ij}
+\end{align*}
+
+
+
+\begin{align*}
+  \begin{bmatrix}
+    \alpha_j \\
+    u_{j1} \\
+    u_{j2}
+  \end{bmatrix}
+  &\sim \mathcal{N}
+  \left(
+  \begin{bmatrix}
+    \alpha \\
+    0 \\
+    0
+  \end{bmatrix},
+  \boldsymbol{\Sigma}
+  \right)
+\end{align*}
+
 \textbf{Findings}: 
 
 \textbf{Interpretation}: 
@@ -90,6 +122,7 @@
 
 
 \begin{figure}[p]
+  \captionsetup{singlelinecheck=off}
   \centering
   \includegraphics[width=\textwidth]{benin_dco_lasso_coefficients.png}
   \caption{Coefficients, Benin, median and 95\% CrI}
@@ -98,9 +131,21 @@
 
 
 \begin{figure}[p]
+  \captionsetup{singlelinecheck=off}
+  \centering
+  \includegraphics[width=\textwidth]{drc_2015_dco_bayes_coefs.png}
+  \caption{Coefficients, DRC 2015, multilevel model. Although individual coefficinets were not statistically signicant, overall explanatory power of the model ranged from
+    modest (Bayes $R^2$ 53.9\% (Follow-up ANC, First Trimester)) to low (27.5\%)}
+  \label{fig:drc 2015 dco lm}
+\end{figure} 
+
+
+\begin{figure}[p]
+  \captionsetup{singlelinecheck=off}
   \centering
     \includegraphics[width=\textwidth]{drc_2015_dco_lasso_coefficients.png}
-    \caption{Coefficients, DRC 2015  \begin{itemize}
+    \caption{Coefficients, DRC 2015
+      \begin{itemize}
       \item The explanatory power of the variables is modest, with deviance ranging from 25.07 to 48.27\% across data strata.
       \item Most included variables have median coefficient of zero or credible intervals that span 0.
       \item However, most variables have skewed credible intervals that are bounded away from zero, suggesting modest but consistent effect.
