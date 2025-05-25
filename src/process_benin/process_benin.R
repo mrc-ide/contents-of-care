@@ -24,6 +24,8 @@ benin <- read.dta("benin.dta")
 ## Recode
 benin <- rename(
   benin,
+  health_zone = m_id2,
+  hcw_qualification = m0_id8,
   hour_start = m0_h1d,
   min_start = m0_m1d,
   hour_end = m0_h1f,
@@ -114,7 +116,50 @@ benin$time_elapsed_since_start_of_day <- time_length(start - start_of_day, unit 
 benin$consult_length <- time_length(end - start, unit = "minute")
 
 
-benin <- mutate(benin, across(first_anc:sp_ensured3, recode_oui_non))
+benin$health_zone <- case_when(
+  benin$health_zone %in% 1 ~ "Banikoara",
+  benin$health_zone %in% 2 ~ "Zogbodomey/Bohicon/Zakpota",
+  benin$health_zone %in% 3 ~ "Adjohoun/Dangbo/Bonou",
+  benin$health_zone %in% 4 ~ "Porto-Novo/ Sèmè-Kpodji/ Aguégués",
+  benin$health_zone %in% 5 ~ "Kouandé/ Pehunco/Kerou",
+  benin$health_zone %in% 6 ~ "Lokossa/Athiémé",
+  benin$health_zone %in% 7 ~ "Ouidah/Kpomassè/Tori",
+  benin$health_zone %in% 8 ~ "Covè/Ouinhi/Zangnanado",
+  benin$health_zone %in% 9 ~ "Savalou/Bantè",
+  benin$health_zone %in% 10 ~ "Savè/Ouèssè",
+  TRUE ~ NA_character_
+)
+benin$m0_milieu <- case_when(
+  benin$m0_milieu %in% 1 ~ "Urban",
+  benin$m0_milieu %in% 2 ~ "Rural",
+  TRUE ~ NA_character_
+)
+
+benin$trimester <- case_when(
+  benin$trimester %in% "premier trimestre" ~ "First Trimester",
+  benin$trimester %in% "deuxieme trimestre" ~ "Second Trimester",
+  benin$trimester %in% "troisieme trimestre" ~ "Third Trimester",
+  TRUE ~ NA_character_
+)
+
+## Codebook does not specify the values for hcw_qualification
+## I am assuming the same codes are used in the unannounced visits
+benin$hcw_qualification <- case_when(
+  benin$hcw_qualification %in% 1 ~ "Doctor",
+  benin$hcw_qualification %in% 2 ~ "Nurse",
+  benin$hcw_qualification %in% 3 ~ "Midwife",
+  benin$hcw_qualification %in% 4 ~ "Biologist",
+  benin$hcw_qualification %in% 5 ~ "Pharmacist",
+  benin$hcw_qualification %in% 6 ~ "Medical Imaging Technician",
+  benin$hcw_qualification %in% 7 ~ "Administrator",
+  benin$hcw_qualification %in% 8 ~ "Caregiver",
+  benin$hcw_qualification %in% 9 ~ "Hygiene and Sanitation Agent",
+  benin$hcw_qualification %in% 10 ~ "Other",
+  TRUE ~ NA_character_
+)
+
+saveRDS(benin, "benin_2010_dco.rds")
+
 ## benin <- rowwise(benin) |> mutate(nsteps = sum(c_across(m0_03:m3_6), na.rm = TRUE))
 
 
