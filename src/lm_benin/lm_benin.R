@@ -1,8 +1,10 @@
 library(broom)
+library(brms)
 library(dplyr)
 library(ggplot2)
 library(ggpmisc)
 library(glmnet)
+library(glue)
 library(orderly2)
 library(purrr)
 library(rsample)
@@ -12,24 +14,6 @@ library(tidyr)
 
 
 
-full_model <- function(df) {
-  x_matrix <- model.matrix(log(consult_length) ~ (
-    doctor_or_nursing_and_midwifery_per_10000 + m0_milieu + m_id2 +
-    women_in_labour_pay +
-    pregnant_women_private_space +
-    number_of_births_2009 +
-    fetoscope +
-      ## HCW characteristics
-      factor(m0_id8) +
-      ## Patient characteristics
-      trimester +
-      ## Appointment characteristics
-      time_elapsed_since_start_of_day), data = df)[, -1]
-
-  y_vec <- df$log_consult_length
-
-  list(x_matrix = x_matrix, y_vec = y_vec)
-}
 
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
@@ -39,17 +23,37 @@ source("utils.R")
 
 orderly_dependency("process_benin", "latest", files = c("benin_dco.rds"))
 benin_dco <- readRDS("benin_dco.rds")
+
 ## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
 benin_dco$fetoscope <- case_when(
-  benin_dco$fetoscope %in% 2L ~ 0,
-  benin_dco$fetoscope %in% 1L ~ 1,
-  TRUE ~ NA_real_
+  benin_dco$fetoscope %in% 2L ~ "non",
+  benin_dco$fetoscope %in% 1L ~ "oui",
+  TRUE ~ NA_character_
 )
+
+benin_dco$women_in_labour_pay <- case_when(
+  benin_dco$women_in_labour_pay %in% 2L ~ "non",
+  benin_dco$women_in_labour_pay %in% 1L ~ "oui",
+  TRUE ~ NA_character_
+)
+
+benin_dco$pregnant_women_private_space <- case_when(
+  benin_dco$pregnant_women_private_space %in% 2L ~ "non",
+  benin_dco$pregnant_women_private_space %in% 1L ~ "oui",
+  TRUE ~ NA_character_
+)
+
+
 benin_small <- select(
-  benin_dco, consult_length, m0_milieu, m_id2, facility_type, facility_status,
+  benin_dco, consult_length, m0_milieu, health_zone, facility_type, facility_status,
   pregnant_women_private_space, doctor_or_nursing_and_midwifery_per_10000,
-  women_in_labour_pay, m0_id8, first_anc, trimester, time_elapsed_since_start_of_day,
+  women_in_labour_pay, hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
   fetoscope, number_of_births_2009
+)
+
+benin_small$hcw_qualification <- case_when(
+  !benin_small$hcw_qualification %in% c("Doctor", "Midwife", "Nurese") ~ "Other",
+  TRUE ~ benin_small$hcw_qualification
 )
 
 benin_small$log_consult_length <- log(benin_small$consult_length)
@@ -58,118 +62,24 @@ set.seed(42)
 
 ## Stratify by facility type and first ANC
 benin_split <- split(
-  benin_small, list(benin_dco$facility_type, benin_dco$first_anc),
+  benin_small, list(benin_dco$first_anc, benin_dco$trimester),
   sep = "_"
 )
 
 ## Remove strata with less than 30 observations
 map(benin_split, nrow)
-benin_split <- keep(benin_split, function(x) nrow(x) >= 30)
 benin_split <- map(benin_split, na.omit)
-##############################################
-### 1. LASSO model with cross-validated lambda
-##############################################
-best_lambda <- map(benin_split, function(x) {
-  out <- full_model(x)
-  cv_fit <- cv.glmnet(out$x_matrix, out$y_vec, alpha = 1, standardize = TRUE)
-  bestl <- cv_fit$lambda.min
-  bestl
-})
+benin_split <- keep(benin_split, function(x) nrow(x) >= 30)
 
-lasso_fit <- map2(benin_split, best_lambda, function(x, bestl) {
+orderly_resource("lm_benin_multilevel.R")
+source("lm_benin_multilevel.R")
 
-  if (nrow(x) == 0) return(NULL)
-  cli::cli_alert("Retained rows {nrow(x)}")
-  out <- full_model(x)
-  glmnet(out$x_matrix, out$y_vec, alpha = 1, lambda = bestl)
-  
-})
 
-coefficients <- map_dfr(lasso_fit, function(x) {
-  out <- as.data.frame(as.matrix(coef(x)))
-  out <- tibble::rownames_to_column(out, "term")
-  out
-}, .id = "datacut")
 
-##############################################
-# 2. Bootstrapping with rsample
-##############################################
-n_boot <- 100
 
-boot_samples <- map(benin_split, function(x) bootstraps(x, times = n_boot))
 
-boot_coefs <- map2_dfr(boot_samples, best_lambda, function(boot, bestl) {
-  map_dfr(boot$splits, function(split) {
-    x <- analysis(split)
-    model <- full_model(x)
-    fit <- glmnet(model$x_matrix, model$y_vec, alpha = 1, lambda = bestl)
-    out <- as.data.frame(as.matrix(coef(fit)))
-    out <- tibble::rownames_to_column(out, "term")
-    out
-  })}, .id = "datacut")
 
-##############################################
-# 3. Summarise bootstrapped estimates
-##############################################
-summary_table <- boot_coefs %>%
-  group_by(datacut, term) %>%
-  summarise(
-    mean = mean(s0),
-    se = sd(s0) / sqrt(n() - 1),
-    lower = quantile(s0, 0.025),
-    upper = quantile(s0, 0.975)   
-  ) %>%
-  arrange(desc(abs(mean)))
+orderly_resource("lm_benin_lasso.R")
+source("lm_benin_lasso.R")
 
-print(summary_table)
 
-##############################################
-### 4. RMSE and R-squared
-##############################################
-predicted_y <- map2(lasso_fit, benin_split, function(fit, x) {
-  if (nrow(x) == 0) return(NULL)
-  out <- full_model(x)
-  predict(fit, newx = out$x_matrix)
-})
-
-rmse <- map2_dbl(predicted_y, benin_split, function(pred, x) {
-  if (nrow(x) == 0) {
-    return(NULL)
-  }
-  sqrt(mean((x$log_consult_length - pred)^2))
-})
-
-r_squared <- map2_dbl(predicted_y, benin_split, function(pred, x) {
-  if (nrow(x) == 0) {
-    return(NULL)
-  }
-  cor(x$log_consult_length, pred)^2
-})
-
-summary_table <- separate(
-  summary_table, datacut,
-  into = c("facility_type", "first_anc"), sep = "_"
-)
-
-r_squared <- tidy(r_squared)
-r_squared <- separate(
-  r_squared, names,
-  into = c("facility_type", "first_anc"), sep = "_"
-)
-r_squared$x <- scales::percent(r_squared$x)
-##############################################
-# 5. Visualise bootstrapped intervals
-##############################################
-p <- ggplot(summary_table, aes(y = term, x = mean)) +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  geom_errorbarh(aes(xmin = mean - se, xmax = mean + se), height = 0) +
-  geom_point() +
-  facet_grid(facility_type ~ first_anc) +
-  theme_manuscript() +
-  labs(
-    title = "Bootstrapped LASSO Coefficients",
-    y = "Predictor",
-    x = "Mean +/- SE"
-  )
-
-ggsave_manuscript("benin_lasso_bootstrapped", p, width = 10, height = 6)

@@ -1,6 +1,9 @@
 library(orderly2)
 library(quarto)
 
+################################################################################
+## Benin
+################################################################################
 orderly_dependency(
   "eda_benin", "latest",
   c(
@@ -12,22 +15,33 @@ orderly_dependency(
   )
 )
 
-orderly_dependency("lm_benin", "latest", c("benin_dco_lasso_coefficients.png"))
+orderly_dependency(
+  "lm_benin", "latest",
+  c("benin_dco_lasso_coefficients.png", "benin_dco_bayes_coefs.png")
+)
 
-orderly_dependency("lm_burkina_faso", "latest", c("bfa_lasso_bootstrapped.png"))
-
-
+## Burkina Faso
 orderly_dependency(
   "eda_burkina_faso", "latest",
-  c(
-    "bfa_consult_length_by_overall.png",
+  c("bfa_consult_length_by_overall.png",
     "bfa_consult_length_by_region.png",
     "bfa_consult_length_by_first_anc.png",
     "bfa_consult_length_by_trimester.png"
   )
 )
+orderly_dependency("lm_burkina_faso", "latest", c("bfa_lasso_bootstrapped.png"))
 
+################################################################################
+## Cameroon
+################################################################################
 
+################################################################################
+## Central African Republic
+################################################################################
+
+################################################################################
+## DRC
+################################################################################
 orderly_dependency(
   "eda_drc", "latest", c("drc_2015_consult_length_by_overall.png")
 )
@@ -46,5 +60,14 @@ orderly_dependency(
   "lm_drc_midline", "latest", c("drc_midline_dco_lasso_coefficients.png")
 )
 
-##quarto_render("summary-presentation.qmd")
+## Lesotho
+
+
+
+
+
+
+## quarto_render("summary-presentation.qmd")
+system("pdflatex main.tex")
+##system("biber main")
 system("pdflatex main.tex")
