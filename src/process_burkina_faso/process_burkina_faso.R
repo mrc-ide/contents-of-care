@@ -144,6 +144,7 @@ bfa_baseline_dco <- rename(
 )
 
 common_cols <- intersect(names(bfa_baseline_dco), names(bfa_endline_dco))
+
 bfa_dco <- bind_rows(
   list(
     baseline = bfa_baseline_dco[, common_cols],
@@ -156,6 +157,140 @@ bfa_dco$consult_start <- case_when(
   bfa_dco$consult_start %in% 99 ~ NA,
   TRUE ~ bfa_dco$consult_start
 )
+
+## bfa_dco$consult_start <- as.character(bfa_dco$consult_start)
+## bfa_dco$consult_end <- as.integer(bfa_dco$consult_end)
+
+## Fix obvious data entry errors
+## Not sure what this is meant to be; end time is 1100
+idx <- bfa_dco$consult_start %in% 3
+bfa_dco$consult_start[idx] <- NA
+
+## end time is 1143; so 1105?
+idx <- bfa_dco$consult_start %in% 115
+bfa_dco$consult_start[idx] <- 1105
+
+
+## end time is 1809; so 1758 instead of 758?
+idx <- bfa_dco$consult_start %in% 758
+bfa_dco$consult_start[idx] <- 1758
+
+idx <- bfa_dco$consult_start %in% 12
+bfa_dco$consult_start[idx] <- 1200
+
+idx <- bfa_dco$consult_start %in% 8
+bfa_dco$consult_start[idx] <- 0800
+
+idx <- bfa_dco$consult_start %in% 9
+bfa_dco$consult_start[idx] <- 0900
+
+idx <- bfa_dco$consult_start %in% 10
+bfa_dco$consult_start[idx] <- 1000
+
+idx <- bfa_dco$consult_end %in% 10
+bfa_dco$consult_end[idx] <- 1000
+
+
+idx <- bfa_dco$consult_end %in% 100
+bfa_dco$consult_end[idx] <- 1000
+
+## This could be 1002 or 1020.
+idx <- bfa_dco$consult_end %in% 102
+bfa_dco$consult_end[idx] <- NA
+
+idx <- bfa_dco$consult_end %in% 115
+bfa_dco$consult_end[idx] <- 1315 ## start time is 1143
+
+
+
+
+idx <- bfa_dco$consult_start %in% 11
+bfa_dco$consult_start[idx] <- 1100
+
+idx <- bfa_dco$consult_end %in% 11
+bfa_dco$consult_end[idx] <- 1100
+
+
+
+idx <- bfa_dco$consult_end %in% 12
+bfa_dco$consult_end[idx] <- 1200
+
+idx <- bfa_dco$consult_start %in% 13
+bfa_dco$consult_start[idx] <- 1300
+
+idx <- bfa_dco$consult_end %in% 13
+bfa_dco$consult_end[idx] <- 1300
+
+
+idx <- bfa_dco$consult_start %in% 14
+bfa_dco$consult_start[idx] <- 1400
+
+idx <- bfa_dco$consult_end %in% 14
+bfa_dco$consult_end[idx] <- 1400
+
+
+## End time of this one is 1025; so probably start time is 1015
+## But we cant be sure
+idx <- bfa_dco$consult_start %in% 15
+bfa_dco$consult_start[idx] <- NA
+
+
+idx <- bfa_dco$consult_end %in% 15
+bfa_dco$consult_end[idx] <- NA
+
+idx <- bfa_dco$consult_start %in% c(3, 4, 32, 45, 98, 246, 295)
+bfa_dco$consult_start[idx] <- NA
+
+
+idx <- bfa_dco$consult_end %in% c(3, 4, 32, 45, 98)
+bfa_dco$consult_end[idx] <- NA
+
+## End times are 956 and 950; so unsure what 102 could be
+idx <- bfa_dco$consult_start %in% 102
+bfa_dco$consult_start[idx] <- NA
+
+idx <- bfa_dco$consult_start %in% 830
+bfa_dco$consult_start[idx] <- 0830
+
+idx <- bfa_dco$consult_start %in% 8030
+bfa_dco$consult_start[idx] <- 0830
+bfa_dco$consult_end[idx] <- 0945
+
+idx <- bfa_dco$consult_start %in% 9025
+bfa_dco$consult_start[idx] <- 0925
+bfa_dco$consult_end[idx] <- 0940
+
+idx <- bfa_dco$consult_start %in% 9048
+bfa_dco$consult_start[idx] <- 0948
+bfa_dco$consult_end[idx] <- 0958
+
+
+idx <- bfa_dco$consult_end %in% 9000
+bfa_dco$consult_start[idx] <- 0853
+bfa_dco$consult_end[idx] <- 0900
+
+## Start time here is 710, but unclear what the end time is from 7320
+idx <- bfa_dco$consult_end %in% 7320
+bfa_dco$consult_start[idx] <- 0710
+bfa_dco$consult_end[idx] <- NA
+
+idx <- bfa_dco$consult_end %in% 9052
+bfa_dco$consult_start[idx] <- 0941
+bfa_dco$consult_end[idx] <- 0952
+
+idx <- bfa_dco$consult_end %in% 9172
+bfa_dco$consult_start[idx] <- 0905
+bfa_dco$consult_end[idx] <- NA
+
+idx <- bfa_dco$consult_end %in% 9998
+bfa_dco$consult_start[idx] <- NA
+bfa_dco$consult_end[idx] <- NA
+
+
+
+
+
+
 time_vec <- bfa_dco$consult_start
 time_str <- sprintf("%04d", time_vec)
 bfa_dco$consult_start_formatted <- hm(
@@ -171,9 +306,51 @@ start_of_day <- hm("07:00")
 bfa_dco$time_elapsed_since_start_of_day <-
   time_length(bfa_dco$consult_start_formatted - start_of_day, unit = "minute")
 
+bfa_dco$consult_length_calc <-
+  time_length(
+    bfa_dco$consult_end_formatted - bfa_dco$consult_start_formatted,
+    unit = "minute"
+  )
+
+## This reveals some more data entry errors
+idx <- which(bfa_dco$consult_length_calc < 0)
+tmp <- bfa_dco$consult_start[idx]
+bfa_dco$consult_start[idx] <- bfa_dco$consult_end[idx]
+bfa_dco$consult_end[idx] <- tmp
+
+## Recalculate the consult length
+time_vec <- bfa_dco$consult_start
+time_str <- sprintf("%04d", time_vec)
+bfa_dco$consult_start_formatted <- hm(
+  paste0(substr(time_str, 1, 2), ":", substr(time_str, 3, 4))
+)
+
+time_vec <- bfa_dco$consult_end
+time_str <- sprintf("%04d", time_vec)
+bfa_dco$consult_end_formatted <- hm(
+  paste0(substr(time_str, 1, 2), ":", substr(time_str, 3, 4))
+)
+start_of_day <- hm("07:00")
+bfa_dco$time_elapsed_since_start_of_day <-
+  time_length(bfa_dco$consult_start_formatted - start_of_day, unit = "minute")
+
+bfa_dco$consult_length_calc <-
+  time_length(
+    bfa_dco$consult_end_formatted - bfa_dco$consult_start_formatted,
+    unit = "minute"
+  )
+
+## Now we are left with 10 rows where start and times are the same
+## One consult_start at 813, ends ar 1758;  not sure if this is mistake?
+## For now I'll set it to NA
+idx <- bfa_dco$consult_start %in% 813 & bfa_dco$consult_end %in% 1758
+bfa_dco$consult_start[idx] <- NA
+bfa_dco$consult_end[idx] <- NA
+bfa_dco$consult_length_calc[idx] <- NA
 
 
-bfa_dco$first_anc <- ifelse(bfa_dco$num_prev_anc_visits == 0, 1, 0)
+
+bfa_dco$first_anc <- ifelse(bfa_dco$num_prev_anc_visits == 0, "Yes", "No")
 bfa_dco$pregnancy_week <- ifelse(
   bfa_dco$pregnancy_week %in% 98, NA, bfa_dco$pregnancy_week
 )
@@ -307,6 +484,6 @@ bfa_dco <- left_join(bfa_dco, hcw_count, by = "SE")
 saveRDS(bfa_dco, "bfa_dco.rds")
 orderly_artefact(
   files = "bfa_dco.rds",
-  description = "DCO for Burkina Faso baseline survey"
+  description = "DCO for Burkina Faso baseline and endline surveys"
 )
 
