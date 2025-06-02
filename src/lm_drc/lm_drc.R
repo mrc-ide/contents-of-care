@@ -18,7 +18,7 @@ source("utils.R")
 
 
 
-orderly_dependency("process_drc", "latest", files = c("drc_dco_2015.rds"))
+orderly_dependency("process_drc", "latest", files = c("drc_dco_2015_augmented.rds"))
 drc_dco_2015 <- readRDS("drc_dco_2015.rds")
 start_of_day <- hm("06:00")
 drc_dco_2015$time_elapsed_since_start_of_day <- as.numeric(

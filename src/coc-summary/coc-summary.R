@@ -19,8 +19,9 @@ orderly_dependency(
   "lm_benin", "latest",
   c("benin_dco_lasso_coefficients.png", "benin_dco_bayes_coefs.png")
 )
-
+################################################################################
 ## Burkina Faso
+################################################################################
 orderly_dependency(
   "eda_burkina_faso", "latest",
   c("bfa_consult_length_by_overall.png",
@@ -29,7 +30,10 @@ orderly_dependency(
     "bfa_consult_length_by_trimester.png"
   )
 )
-orderly_dependency("lm_burkina_faso", "latest", c("bfa_lasso_bootstrapped.png"))
+orderly_dependency(
+  "lm_burkina_faso", "latest",
+  c("bfa_dco_lasso_coefficients.png", "bfa_dco_bayes_coefs.png")
+)
 
 ################################################################################
 ## Cameroon

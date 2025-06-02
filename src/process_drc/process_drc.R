@@ -1,5 +1,6 @@
 library(dplyr)
 library(foreign)
+library(janitor)
 library(lubridate)
 library(orderly2)
 library(readr)
@@ -345,11 +346,309 @@ orderly_artefact(
 ## Questions after that are about number of patients
 ## Questions starting 13.07 are about availability of equipment for ANC
 
-## Congo, Rep. - Health Results-Based Financing Impact Evaluation 2014, Baseline Survey - 2014
-## 2736
-## Still called baseline
+infile <- "facility_f1_data.csv"
+orderly_shared_resource(drc_baseline_hf.csv = paste(indir, infile, sep = "/"))
+drc_baseline_hf <- read_csv("drc_baseline_hf.csv")
+drc_baseline_hf$province <- case_when(
+  drc_baseline_hf$f1_id1 == 1 ~ "Bandundu",
+  drc_baseline_hf$f1_id1 == 2 ~ "Ecuador",
+  drc_baseline_hf$f1_id1 == 3 ~ "Katanga",
+  drc_baseline_hf$f1_id1 == 4 ~ "Maniema",
+  drc_baseline_hf$f1_id1 == 5 ~ "Katanga (comparison)",
+  drc_baseline_hf$f1_id1 == 6 ~ "North Kivu",
+  drc_baseline_hf$f1_id1 == 7 ~ "South Kivu",
+  TRUE ~ as.character(drc_baseline_hf$f1_id1)
+)
+
+drc_baseline_hf$facility_type <- case_when(
+  drc_baseline_hf$f1_00_01 == 1 ~ "Hospital",
+  drc_baseline_hf$f1_00_01 == 2 ~ "Health center",
+  TRUE ~ as.character(drc_baseline_hf$f1_00_01)
+)
+
+drc_baseline_hf$facility_status <- case_when(
+  drc_baseline_hf$f1_00_04 == 1 ~ "Public",
+  drc_baseline_hf$f1_00_04 == 2 ~ "Private for-profit",
+  drc_baseline_hf$f1_00_04 == 3 ~ "Private not-for-profit",
+  drc_baseline_hf$f1_00_04 == 4 ~ "Faith-based",
+  drc_baseline_hf$f1_00_04 == 5 ~ "Public-private partnership",
+  TRUE ~ as.character(drc_baseline_hf$f1_00_04)
+)
+
+drc_baseline_hf$milieu_of_residence <- case_when(
+  drc_baseline_hf$f1_00_07 == 1 ~ "Urban",
+  drc_baseline_hf$f1_00_07 == 2 ~ "Rural",
+  TRUE ~ as.character(drc_baseline_hf$f1_00_07)
+)
+
+drc_baseline_hf$date_of_visit <- case_when(
+  drc_baseline_hf$f1_00_09 == -999999 ~ NA_character_,
+  TRUE ~ as.character(drc_baseline_hf$f1_00_09)
+)
+
+drc_baseline_hf$num_villages_covered_by_hf <-
+  drc_baseline_hf$f1_03_07
+
+drc_baseline_hf$catchment_pop <- drc_baseline_hf$f1_07_02a
+drc_baseline_hf$catchment_pop <- ifelse(
+  drc_baseline_hf$catchment_pop < 0, NA_integer_, drc_baseline_hf$catchment_pop
+)
+drc_baseline_hf$catchment_pop_binned <-
+  cut(
+    drc_baseline_hf$catchment_pop,
+    breaks = c(0, 6000, 8000, 10000, 14000, Inf),
+    dig.lab = 5, ordered_result = TRUE)
+
+
+drc_baseline_hf$catchment_pop_pregnant_women <- drc_baseline_hf$f1_07_02b
+drc_baseline_hf$catchment_pop_pregnant_women <- ifelse(
+  drc_baseline_hf$catchment_pop_pregnant_women < 0, NA_integer_,
+  drc_baseline_hf$catchment_pop_pregnant_women
+)
+drc_baseline_hf$catchment_pop_pregnant_women_binned <-
+  cut(
+    drc_baseline_hf$catchment_pop_pregnant_women,
+    breaks = c(0, 30, 150, 300, 500, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+
+drc_baseline_hf$catchment_pop_female_15_49 <- drc_baseline_hf$f1_07_02c
+drc_baseline_hf$catchment_pop_female_15_49 <- ifelse(
+  drc_baseline_hf$catchment_pop_female_15_49 < 0, NA_integer_,
+  drc_baseline_hf$catchment_pop_female_15_49
+)
+drc_baseline_hf$catchment_pop_female_15_49_binned <-
+  cut(
+    drc_baseline_hf$catchment_pop_female_15_49,
+    breaks = c(0, 250, 1000, 1500, 2000, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+
+drc_baseline_hf$catchment_pop_under_5 <- drc_baseline_hf$f1_07_02d
+drc_baseline_hf$catchment_pop_under_5 <- ifelse(
+  drc_baseline_hf$catchment_pop_under_5 < 0, NA_integer_,
+  drc_baseline_hf$catchment_pop_under_5
+)
+
+drc_baseline_hf$catchment_pop_under_5_binned <-
+  cut(
+    drc_baseline_hf$catchment_pop_under_5,
+    breaks = c(0, 250, 1000, 1500, 2500, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+
+## Information from the register
+## numbers in the last month
+drc_baseline_hf$total_attendance_last_month <-
+  drc_baseline_hf$f1_07_03
+
+drc_baseline_hf$total_attendance_last_month <-
+  ifelse(
+    drc_baseline_hf$total_attendance_last_month < 0,
+    NA_integer_, drc_baseline_hf$total_attendance_last_month
+  )
+
+drc_baseline_hf$total_attendance_last_month_binned <-
+  cut(
+    drc_baseline_hf$total_attendance_last_month,
+    breaks = c(0, 100, 150, 250, 350, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+
+drc_baseline_hf$pregnant_women_last_month <-
+  drc_baseline_hf$f1_07_04
+
+drc_baseline_hf$pregnant_women_last_month <- ifelse(
+  drc_baseline_hf$pregnant_women_last_month < 0, NA_integer_,
+  drc_baseline_hf$pregnant_women_last_month)
+
+drc_baseline_hf$pregnant_women_last_month_binned <-
+  cut(
+    drc_baseline_hf$pregnant_women_last_month,
+    breaks = c(0, 10, 15, 25, 35, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+
+drc_baseline_hf$total_births_last_month <-
+  drc_baseline_hf$f1_07_08
+drc_baseline_hf$total_births_last_month <-
+  ifelse(
+    drc_baseline_hf$total_births_last_month < 0,
+    NA_integer_, drc_baseline_hf$total_births_last_month
+  )
+drc_baseline_hf$total_births_last_month_binned <-
+  cut(
+    drc_baseline_hf$total_births_last_month,
+    breaks = c(0, 5, 10, 15,25, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+drc_baseline_hf$total_live_births_last_month <-
+  drc_baseline_hf$f1_07_09
+drc_baseline_hf$total_live_births_last_month <-
+  ifelse(
+    drc_baseline_hf$total_live_births_last_month < 0,
+    NA_integer_, drc_baseline_hf$total_live_births_last_month
+  )
+
+drc_baseline_hf$total_live_births_last_month_binned <-
+  cut(
+    drc_baseline_hf$total_live_births_last_month,
+    breaks = c(0, 5, 10, 15, 25, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+
+drc_baseline_hf$total_fullterm_births_last_month <-
+  drc_baseline_hf$f1_07_10
+drc_baseline_hf$total_fullterm_births_last_month <-
+  ifelse(
+    drc_baseline_hf$total_fullterm_births_last_month < 0,
+    NA_integer_, drc_baseline_hf$total_fullterm_births_last_month
+  )
+
+drc_baseline_hf$total_fullterm_births_last_month_binned <-
+  cut(
+    drc_baseline_hf$total_fullterm_births_last_month,
+    breaks = c(0, 5, 10, 15, 25, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+drc_baseline_hf$total_fullterm_lowweight_births_last_month <-
+  drc_baseline_hf$f1_07_11
+
+drc_baseline_hf$total_fullterm_lowweight_births_last_month <-
+  ifelse(
+    drc_baseline_hf$total_fullterm_lowweight_births_last_month < 0,
+    NA_integer_, drc_baseline_hf$total_fullterm_lowweight_births_last_month
+  )
+
+drc_baseline_hf$total_fullterm_lowweight_births_last_month_binned <-
+  cut(
+    drc_baseline_hf$total_fullterm_lowweight_births_last_month,
+    breaks = c(0, 5, 10, 15, 25, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  )
+
+
+drc_baseline_hf$neonatal_deaths_28_days_last_month <-
+  drc_baseline_hf$f1_07_12
+drc_baseline_hf$neonatal_deaths_28_days_last_month <-
+  ifelse(
+    drc_baseline_hf$neonatal_deaths_28_days_last_month < 0,
+    NA_integer_, drc_baseline_hf$neonatal_deaths_28_days_last_month
+  )
+drc_baseline_hf$neonatal_deaths_28_days_last_month_binned <-
+  cut(
+    drc_baseline_hf$neonatal_deaths_28_days_last_month,
+    breaks = c(0, 1, 2, 3, 5, Inf),
+    dig.lab = 5, ordered_result = TRUE
+  ) 
+
+drc_baseline_hf$neonatal_deaths_7_days_last_month <-
+  drc_baseline_hf$f1_07_16
+
+
+drc_baseline_hf$maternal_deaths_last_month <-
+  drc_baseline_hf$f1_07_13
+
+drc_baseline_hf$maternal_deaths_last_month <-
+  ifelse(
+    drc_baseline_hf$maternal_deaths_last_month < 0,
+    NA_integer_, drc_baseline_hf$maternal_deaths_last_month
+  )
+
+drc_baseline_hf$maternal_deaths_audited_last_month <-
+  drc_baseline_hf$f1_07_14
+
+
+drc_baseline_hf$total_assisted_births_last_month <-
+  drc_baseline_hf$f1_07_15
+
+drc_baseline_hf$early_breastfeeding_initiated_last_month <-
+  drc_baseline_hf$f1_07_17
+
+drc_baseline_hf$maternal_deaths_community_last_month <-
+  drc_baseline_hf$f1_07_18
+
+drc_baseline_hf$maternal_deaths_community_audited_last_month <-
+  drc_baseline_hf$f1_07_19
+
+## Questions 7.20 to 7.27 are about whether the relevant
+## reports exist in the facility
+
+## Section 9 is about whether patients pay for services
+drc_baseline_hf$patients_pay_for_consultation <- case_when(
+  drc_baseline_hf$f1_09_02 == 1 ~ "Yes",
+  drc_baseline_hf$f1_09_02 == 2 ~ "No",
+  TRUE ~ NA_character_
+)
+
+## lab fees
+drc_baseline_hf$patients_pay_for_lab_tests <- case_when(
+  drc_baseline_hf$f1_09_03 == 1 ~ "Yes",
+  drc_baseline_hf$f1_09_03 == 2 ~ "No",
+  drc_baseline_hf$f1_09_03 == 9 ~ "Not applicable",
+  TRUE ~ NA_character_
+)
+
+## medical imaging
+drc_baseline_hf$patients_pay_for_medical_imaging <- case_when(
+  drc_baseline_hf$f1_09_04 == 1 ~ "Yes",
+  drc_baseline_hf$f1_09_04 == 2 ~ "No",
+  drc_baseline_hf$f1_09_04 == 9 ~ "Not applicable",
+  TRUE ~ NA_character_
+)
+
+## hospitalization cost
+drc_baseline_hf$patients_pay_for_hospitalization <- case_when(
+  drc_baseline_hf$f1_09_05 == 1 ~ "Yes",
+  drc_baseline_hf$f1_09_05 == 2 ~ "No",
+  TRUE ~ NA_character_
+)
+
+## consumables
+drc_baseline_hf$patients_pay_for_consumables <- case_when(
+  drc_baseline_hf$f1_09_06 == 1 ~ "Yes",
+  drc_baseline_hf$f1_09_06 == 2 ~ "No",
+  TRUE ~ NA_character_
+)
+
+## medicines
+drc_baseline_hf$patients_pay_for_medicines <- case_when(
+  drc_baseline_hf$f1_09_07 == 1 ~ "Yes",
+  drc_baseline_hf$f1_09_07 == 2 ~ "No",
+  TRUE ~ NA_character_
+)
+
+## Section 13 is a set of questions on availability of equipments
+## 13.08 is specific to ANC
+## f1_13_08b_c: operational; f1_13_08a_c
+drc_baseline_hf$hf_has_fetoscope <- case_when(
+  drc_baseline_hf$f1_13_08b_c > 0 ~ "Yes",
+  drc_baseline_hf$f1_13_08b_c == 0 ~ "No",
+  TRUE ~ NA_character_
+)
 
 
 
+saveRDS(drc_baseline_hf, "drc_hf_2015.rds")
 
-### Endline survey data
+## Combine
+drc_baseline_dco_aug <- left_join(
+  drc_baseline_dco, drc_baseline_hf, by = "facility_id"
+)
+
+saveRDS(drc_baseline_dco_aug, "drc_dco_2015_augmented.rds")
+orderly_artefact(
+  files = c("drc_dco_2015_augmented.rds"),
+  description = "DRC DCO 2015 augmented with health facility data"
+)
+
+  
+

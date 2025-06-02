@@ -32,9 +32,46 @@
 \maketitle
 \section*{Abstract}
 \textbf{Background}: 
-
 \textbf{Methods}:
+\textbf{Findings}: 
+\textbf{Interpretation}: 
 
+\section*{Introduction}
+\section{Results}
+\section{Methods}
+
+\subsection{Benin}
+\begin{align*}
+  \log(Y_{ij}) &= \mu_{ij} + \varepsilon_{ij}, \quad \varepsilon_{ij} \sim \mathcal{N}(0, \sigma^2) \\
+  \mu_{ij} &= \alpha_j + \\
+  & \beta_1 \cdot \text{milieu}_{ij} + \\
+  & \beta_2 \cdot \text{doctor\_or\_nursing\_and\_midwifery\_per\_10000}_{ij} + \\
+  & \beta_3 \cdot \text{first\_pregnancy}_{ij} + \\
+  & \beta_4 \cdot \text{hcw\_qualification}_{ij} + \\
+  & \beta_5 \cdot \text{women\_in\_labour\_pay}_{ij} + \\
+  & \beta_5 \cdot \text{pregnant\_women\_private\_space}_{ij} + \\
+  & \beta_6 \cdot \text{time\_of\_day}_{ij} + \\
+  & \beta_7 \cdot \text{number\_of\_births\_2009} + \\
+  & \beta_8 \cdot \text{fetoscope} + \\
+  & \beta_9 \cdot \text{facility\_type} + \\
+  &\quad + u_{j1} \cdot \text{facility\_type}_{ij}  \\
+\end{align*}
+
+\subsection{Burkina Faso}
+
+\begin{align*}
+  \log(Y_{ij}) &= \mu_{ij} + \varepsilon_{ij}, \quad \varepsilon_{ij} \sim \mathcal{N}(0, \sigma^2) \\
+  \mu_{ij} &= \alpha_j + \\
+  & \beta_2 \cdot \text{doctor\_or\_nursing\_and\_midwifery\_per\_10000}_{ij} +
+  & \beta_3 \cdot \text{first\_pregnancy}_{ij} + \\
+  & \beta_4 \cdot \text{hcw\_qualification}_{ij} + \\
+  & \beta_5 \cdot \text{hcw\_sex}_{ij} + \\ 
+  & \beta_6 \cdot \text{time\_of\_day}_{ij} \\
+  &\quad + u_{j1} \cdot \text{consultation\_language}_{ij} \\
+\end{align*}
+
+
+\subsection{DRC}
 \begin{align*}
   \log(Y_{ij}) &= \mu_{ij} + \varepsilon_{ij}, \quad \varepsilon_{ij} \sim \mathcal{N}(0, \sigma^2) \\
   \mu_{ij} &= \alpha_j + \\
@@ -67,11 +104,8 @@
   \right)
 \end{align*}
 
-\textbf{Findings}: 
-
-\textbf{Interpretation}: 
-
-\section*{Introduction}
+\section{Results}
+\section{Discussion}
 \section*{Figures and Tables}
 \begin{table}[ht]
 \centering
@@ -80,15 +114,15 @@
 \textbf{Id} & \textbf{Data} & \textbf{DCO (n)} \\
 \midrule
 2713 & Benin - Health Results-Based Financing Impact Evaluation Survey 2010-2011, Baseline - 2010 & 701\\
-2732 & Burkina Faso - Health Results-Based Financing Impact Evaluation 2013, Health Facility Baseline Survey - 2013 & 4114\\
-2733 & Burkina Faso - Results-Based Financing Impact Evaluation Health Facility 2017, Endline Survey - 2017 & \\
-2735 & Cameroon - Health Results-Based Financing Impact Evaluation 2012, Health Facility Baseline Survey - 2012 & \\
-2734 & Central African Republic - Health Results-Based Financing Impact Evaluation 2012, Health Facility Baseline Survey - 2012 & \\
-2711 & Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2021 -2022, Health Facility Follow-Up Survey - 2021 & \\
-2736 & Congo, Rep. - Health Results-Based Financing Impact Evaluation 2014, Baseline Survey - 2014 & \\
+2732 & Burkina Faso - Health Results-Based Financing Impact Evaluation 2013, Health Facility Baseline Survey - 2013 & 1569\\
+2733 & Burkina Faso - Results-Based Financing Impact Evaluation Health Facility 2017, Endline Survey - 2017 & 2545\\
+2735 & \textcolor{gray}{Cameroon - Health Results-Based Financing Impact Evaluation 2012, Health Facility Baseline Survey - 2012} & \\
+2734 & \textcolor{gray}{Central African Republic - Health Results-Based Financing Impact Evaluation 2012, Health Facility Baseline Survey - 2012} & \\
+2711 & \textcolor{gray}{Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2021 -2022, Health Facility Follow-Up Survey - 2021} & \\
+2736 & \textcolor{gray}{Congo, Rep. - Health Results-Based Financing Impact Evaluation 2014, Baseline Survey - 2014} & \\
 2768 & Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2015, Health Facility Baseline Survey - 2015 & 1425 \\
-2731 & Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2018, Health Facility Midline Survey - 2018 & \\
-2712 & Lesotho - Health Results Based Financing Impact Evaluation 2015, Health Facility Baseline Survey - 2015 & \\
+2731 & Congo, Dem. Rep. - Health Results Based Financing Impact Evaluation 2018, Health Facility Midline Survey - 2018 & 454\\
+2712 & \textcolor{gray}{Lesotho - Health Results Based Financing Impact Evaluation 2015, Health Facility Baseline Survey - 2015} & \\
 \bottomrule
 \end{tabular}
 \caption{Data sources}
@@ -137,6 +171,16 @@
   \caption{Coefficients, DRC 2015, multilevel model. Although individual coefficinets were not statistically signicant, overall explanatory power of the model ranged from
     modest (Bayes $R^2$ 53.9\% (Follow-up ANC, First Trimester)) to low (27.5\%)}
   \label{fig:drc 2015 dco lm}
+\end{figure} 
+
+
+\begin{figure}[p]
+  \captionsetup{singlelinecheck=off}
+  \centering
+  \includegraphics[width=\textwidth]{bfa_dco_bayes_coefs.png}
+  \caption{Coefficients, Burkina Faso (baseline and endline), multilevel model. Although individual coefficinets were not statistically signicant, overall explanatory power of the model ranged from
+    modest (Bayes $R^2$ 49.1\% (First ANC, First Trimester)) to low (10.9\%, Follow-up ANC, Third Trimester)}
+  \label{fig:bfa dco lm}
 \end{figure} 
 
 
