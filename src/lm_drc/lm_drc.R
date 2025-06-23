@@ -19,21 +19,32 @@ source("utils.R")
 
 
 orderly_dependency("process_drc", "latest", files = c("drc_dco_2015_augmented.rds"))
-drc_dco_2015 <- readRDS("drc_dco_2015.rds")
-start_of_day <- hm("06:00")
+drc_dco_2015 <- readRDS("drc_dco_2015_augmented.rds")
+
 drc_dco_2015$time_elapsed_since_start_of_day <- as.numeric(
   drc_dco_2015$consult_start_formatted - start_of_day,
-  units = "mins"
-)
+  units = "hours"
+) |> round()
 
 drc_baseline_small <- select(
   drc_dco_2015, consult_length_calc,
-  province, 
-  facility_status,
-  milieu_of_residence,
+  province = province.x, 
+  ## Facility characteristics
+  facility_status = facility_status.x,
+  facility_type = facility_type.y, ## .y is coded properly
+  ## milieu_of_residence.y and milieu_of_residence.x differ in 34 rows;
+  ## we use the one from the facility survey, which is .y
+  ## 34 rows correspond to 17 facilities
+  milieu_of_residence = milieu_of_residence.y,
+  total_attendance_last_month_binned,
+  patients_pay_for_consumables,
+  hf_has_fetoscope,
+  ## Patient characteristics
   pregnancy_in_weeks, first_pregnancy, first_anc,
   trimester,
+  ## HCW characteristics
   hcw_sex, hcw_qualification,
+  ## Appointment characteristics
   consultation_language,
   time_elapsed_since_start_of_day
 )
@@ -59,6 +70,10 @@ drc_baseline_small$facility_status <- case_when(
   ) ~ "Not public"
 )
 
+drc_baseline_small <- mutate_if(
+  drc_baseline_small, is.character,
+  ~ replace_na(.x, "Unknown")
+)
 
 ## For covariates included in the model, tabulate the number of observations
 nobs <- select(
@@ -80,6 +95,8 @@ set.seed(42)
 ## province is soaking up a lot of variation;
 ## But we can't stratify by it because within each province, we have very limited
 ## to no variation in other covariates.
+
+
 
 drc_baseline_split <- split(
   drc_baseline_small,

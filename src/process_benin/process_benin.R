@@ -109,10 +109,10 @@ benin <- rename(
 
 ## Answers to pregnancy_stage are at most 36 weeks, and more than 36 weeks
 benin <- relocate(benin, pregnancy_stage, .after = sp_ensured3)
-start_of_day <- hm("08:00")
+
 start <- hm(paste(benin$hour_start, benin$min_start, sep = ":"))
 end <- hm(paste(benin$hour_end, benin$min_end, sep = ":"))
-benin$time_elapsed_since_start_of_day <- time_length(start - start_of_day, unit = "minute")
+benin$time_elapsed_since_start_of_day <- time_length(start - start_of_day, unit = "hour")
 benin$consult_length <- time_length(end - start, unit = "minute")
 
 

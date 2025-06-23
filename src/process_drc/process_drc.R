@@ -635,7 +635,34 @@ drc_baseline_hf$hf_has_fetoscope <- case_when(
   TRUE ~ NA_character_
 )
 
+## Filled posts
+drc_baseline_hf$num_midwife <- drc_baseline_hf$f1_03_05c
+drc_baseline_hf$num_nurse_A1 <- drc_baseline_hf$f1_03_05s
+drc_baseline_hf$num_nurse_A2 <- drc_baseline_hf$f1_03_05t
+drc_baseline_hf$num_nurse_L2 <- drc_baseline_hf$f1_03_05u
+drc_baseline_hf$num_nurse_midwife_A1 <- drc_baseline_hf$f1_03_05aa
+drc_baseline_hf$num_nurse_midwife_A2 <- drc_baseline_hf$f1_03_05ab
+drc_baseline_hf$num_nurse_midwife_A3 <- drc_baseline_hf$f1_03_05ac
+drc_baseline_hf$num_doctor <- drc_baseline_hf$f1_03_05ag
+  
 
+
+drc_baseline_hf$doctor_or_nursing_and_midwifery <- rowSums(
+  cbind(
+    drc_baseline_hf$num_doctor,
+    drc_baseline_hf$num_nurse_A1,
+    drc_baseline_hf$num_nurse_A2,
+    drc_baseline_hf$num_nurse_L2,
+    drc_baseline_hf$num_nurse_midwife_A1,
+    drc_baseline_hf$num_nurse_midwife_A2,
+    drc_baseline_hf$num_nurse_midwife_A3,
+    drc_baseline_hf$num_midwife
+  ),
+  na.rm = TRUE
+)
+
+drc_baseline_hf$doctor_or_nursing_and_midwifery_per_10000 <-
+  (drc_baseline_hf$doctor_or_nursing_and_midwifery / drc_baseline_hf$catchment_pop) * 10000
 
 saveRDS(drc_baseline_hf, "drc_hf_2015.rds")
 
