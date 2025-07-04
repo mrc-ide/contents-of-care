@@ -1,0 +1,13 @@
+services:
+  brms:
+    image: brms-stan  # or use jrnold/docker-stan if you didn’t build your own
+    build:
+      context: .
+      dockerfile: Dockerfile  # optional if Dockerfile is in root
+    volumes:
+      - .:/home/r
+      - ${HOME}/.local/share/renv:/renv-cache
+    environment:
+      - RENV_PATHS_CACHE=/renv-cache
+    working_dir: /home/r
+    tty: true

@@ -34,10 +34,7 @@ coefs <- map_dfr(fits, function(fit) {
 }, .id = "datacut")
 
 
-coefs <- separate(
-  coefs, datacut,
-  into = c("first_anc", "trimester"), sep = "_"
-)
+coefs <- separate(coefs, datacut, into = c("first_anc", "trimester"), sep = "_")
 
 
 
@@ -114,6 +111,7 @@ orderly_artefact(
   files = "benin_dco_bayes_coefs.png",
   description = "Bayes coefficients for Benin 2010 DCO model fits"
 )
+
 
 bayes_r2 <- map(fits, bayes_R2)
 saveRDS(bayes_r2, file = "benin_dco_bayes_r2.rds")

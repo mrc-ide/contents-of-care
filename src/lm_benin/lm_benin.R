@@ -24,6 +24,7 @@ source("utils.R")
 
 orderly_dependency("process_benin", "latest", files = c("benin_dco.rds"))
 benin_dco <- readRDS("benin_dco.rds")
+
 benin_dco$time_elapsed_since_start_of_day <- round(benin_dco$time_elapsed_since_start_of_day)
 ## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
 benin_dco$fetoscope <- case_when(
@@ -71,6 +72,18 @@ benin_small$log_consult_length <- log(benin_small$consult_length)
 
 set.seed(42)
 
+## Build a design matrix before splitting the data, to avoid insufficient
+## levels in the factors
+factor_vars <- c(
+  "m0_milieu", "health_zone", "facility_type",
+  "facility_status", "pregnant_women_private_space",
+  "fetoscope", "women_in_labour_pay",
+  "hcw_qualification", "first_anc", "trimester"
+)
+contrasts_list <- lapply(
+  benin_small[ , factor_vars], function(x) contrasts(factor(x), contrasts = TRUE)
+)
+names(contrasts_list) <- factor_vars
 
 benin_split <- split(
   benin_small, list(benin_dco$first_anc, benin_dco$trimester),
@@ -89,7 +102,11 @@ benin_split <- map(benin_split,
 )
 
 
-benin_split <- map(benin_split, na.omit)
+## Experimental: remove all covariates related to facility, and only use
+## facility_id
+
+
+##benin_split <- map(benin_split, na.omit)
 ## benin_split <- keep(benin_split, function(x) nrow(x) >= 30)
 
 

@@ -1,4 +1,4 @@
-FROM rocker/r-ver:4.4.0
+FROM rocker/r-ver:4.5
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libgit2-dev \
     libfontconfig1-dev \
-    pandoc pandoc-citeproc \
+    pandoc \
     libglpk-dev \
     libgsl-dev \
     libomp-dev \
@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN R -e "install.packages(c('brms','renv' ,'remotes'), repos='https://cloud.r-project.org')"
 RUN R -e "install.packages('cmdstanr', repos = c('https://stan-dev.r-universe.dev', getOption('repos')));cmdstanr::install_cmdstan()"
-
+RUN R -e "cmdstanr::install_cmdstan()"
 
 ENV HOME=/home/r
 
