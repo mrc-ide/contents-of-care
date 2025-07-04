@@ -45,14 +45,13 @@ benin_dco$pregnant_women_private_space <- case_when(
   TRUE ~ NA_character_
 )
 
-first_anc_labels <- c(oui = "First ANC: Yes", non = "First ANC: No")
+##first_anc_labels <- c(oui = "First ANC: Yes", non = "First ANC: No")
 
-benin_dco$first_anc <- factor(
-  benin_dco$first_anc,
-  levels = c("oui", "non"),
-  labels = first_anc_labels,
-  ordered = TRUE
-)
+## benin_dco$first_anc <- factor(
+##   benin_dco$first_anc,
+##   levels = c("oui", "non")
+##   ##labels = first_anc_labels
+## )
 
 
 benin_small <- select(
@@ -69,21 +68,37 @@ benin_small$hcw_qualification <- case_when(
 )
 
 benin_small$log_consult_length <- log(benin_small$consult_length)
-
-set.seed(42)
-
-## Build a design matrix before splitting the data, to avoid insufficient
-## levels in the factors
 factor_vars <- c(
   "m0_milieu", "health_zone", "facility_type",
   "facility_status", "pregnant_women_private_space",
   "fetoscope", "women_in_labour_pay",
   "hcw_qualification", "first_anc", "trimester"
 )
-contrasts_list <- lapply(
-  benin_small[ , factor_vars], function(x) contrasts(factor(x), contrasts = TRUE)
+
+## Make NAs into "Unknown"
+benin_small <- mutate(
+  benin_small, across(all_of(factor_vars), function(x) {
+    x[is.na(x)] <- "Unknown"
+    x
+  }
+))
+
+
+set.seed(42)
+
+## Build contrasts before splitting the data, to avoid insufficient
+## levels in the factors
+benin_small <- mutate(
+  benin_small, across(all_of(factor_vars), function(x) {
+    x <- factor(x)
+    contrasts(x) <- contr.treatment(levels(x), contrasts = TRUE)
+    x
+  })
 )
-names(contrasts_list) <- factor_vars
+
+contrasts_list <- map(
+  benin_small[factor_vars], function(x) contrasts(x)
+)
 
 benin_split <- split(
   benin_small, list(benin_dco$first_anc, benin_dco$trimester),
@@ -91,33 +106,25 @@ benin_split <- split(
 )
 
 
-map(benin_split, nrow)
-## Find out the number if NAs in each column in each stratum
-map(benin_split, function(x) {
-  map(x, ~ sum(is.na(.))) |> keep(~ . > 0) 
+benin_split <- map(benin_split, function(x) {
+  walk(factor_vars, function(var) {
+    x[[var]] <- factor(x[[var]], levels = levels(benin_small[[var]]))
+    contrasts(x[[var]]) <- contrasts(benin_small[[var]])
+  })
 })
-## Make NAs into "Unknown"
-benin_split <- map(benin_split, 
-  ~ mutate_all(.x, ~ ifelse(is.na(.), "Unknown", .)) 
-)
-
 
 ## Experimental: remove all covariates related to facility, and only use
 ## facility_id
 
 
-##benin_split <- map(benin_split, na.omit)
-## benin_split <- keep(benin_split, function(x) nrow(x) >= 30)
 
 
 
 
 ## Stepwise regression
 models <- map(benin_split, function(x) {
-  x <- select(x, -first_anc, -trimester, -consult_length)
-  insuff_levels <- map(x, ~ length(unique(.))) |> keep(~ . < 2)
-  x <- select(x, -names(insuff_levels))
-  full_model <- lm(log_consult_length ~ (.), data = x)
+  x <- select(x, -first_anc, -trimester)
+  full_model <- lm(log(consult_length) ~ (.), data = x)
   scope_terms <- terms(log_consult_length ~ (.), data = x)
 
   final <- step(

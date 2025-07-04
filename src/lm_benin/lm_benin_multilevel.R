@@ -15,15 +15,50 @@ formula <- bf(
 )
 
 fits <- map(benin_split, function(x) {
+  X <- model.matrix(
+    ~ m0_milieu +
+      doctor_or_nursing_and_midwifery_per_10000 +
+      women_in_labour_pay +
+      pregnant_women_private_space +
+      number_of_births_2009 +
+      fetoscope +
+      facility_type +
+      hcw_qualification +
+      time_elapsed_since_start_of_day,
+    data = x,
+    contrasts.arg = contrasts_list
+  )
+
+  df_brms <- data.frame(
+    y = log(x$consult_length),
+    facility_type = x$facility_type,
+    health_zone = x$health_zone
+  )
+  df_brms <- cbind(df_brms, as.data.frame(X[, -1]))
+  df_brms <- janitor::clean_names(df_brms)
+
+  ## standardise the numeric variables
+  df_brms <- df_brms %>%
+    mutate(across(
+      c(
+        doctor_or_nursing_and_midwifery_per_10000,
+        number_of_births_2009, time_elapsed_since_start_of_day
+      ),
+      scale
+    ))
+
   brm(
-  formula = formula,
-  data = x,
-  family = gaussian(), 
-  chains = 4,
-  cores = 4,
-  iter = 4000,
-  control = list(adapt_delta = 0.95)
-)})
+    formula = bf(y ~ . + (1 + facility_type | health_zone)),
+    data = df_brms,
+    family = gaussian(),
+    drop_unused_levels = FALSE,
+    chains = 4,
+    cores = 4,
+    iter = 4000,
+    priors <- prior(normal(0, 1), class = "b"),
+    control = list(adapt_delta = 0.95)
+  )
+})
 
 
 
