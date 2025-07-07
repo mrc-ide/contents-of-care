@@ -11,7 +11,7 @@ formula <- bf(
     facility_type +
     hcw_qualification +
     time_elapsed_since_start_of_day +
-    (1 + facility_type | health_zone)
+    (1 | health_zone)
 )
 
 fits <- map(benin_split, function(x) {
@@ -35,49 +35,33 @@ fits <- map(benin_split, function(x) {
     health_zone = x$health_zone
   )
   df_brms <- cbind(df_brms, as.data.frame(X[, -1]))
-  df_brms <- janitor::clean_names(df_brms)
-
-  ## standardise the numeric variables
-  df_brms <- df_brms %>%
-    mutate(across(
-      c(
-        doctor_or_nursing_and_midwifery_per_10000,
-        number_of_births_2009, time_elapsed_since_start_of_day
-      ),
-      scale
-    ))
 
   brm(
-    formula = bf(y ~ . + (1 + facility_type | health_zone)),
+    formula = bf(y ~ . + (1| health_zone)),
     data = df_brms,
     family = gaussian(),
-    drop_unused_levels = FALSE,
+    drop_unused_levels = TRUE,
     chains = 4,
     cores = 4,
     iter = 4000,
     priors <- prior(normal(0, 1), class = "b"),
-    control = list(adapt_delta = 0.95)
+    control = list(adapt_delta = 0.99)
   )
 })
 
 
-
-
-coefs <- map_dfr(fits, function(fit) {
-  x <- as.data.frame(posterior_summary(fit, probs = c(0.025, 0.5, 0.975)))
+fixed_effects <- map_dfr(fits, function(fit) {
+  x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
   tibble::rownames_to_column(x)
 }, .id = "datacut")
 
-
-coefs <- separate(coefs, datacut, into = c("first_anc", "trimester"), sep = "_")
-
-
-
-idx <- grepl(unique(coefs$rowname), pattern = "^b_")
-x <- filter(
-  coefs, rowname %in% unique(coefs$rowname)[idx]
+fixed_effects <- separate(
+  fixed_effects, datacut,
+  into = c("first_anc", "trimester"), sep = "_"
 )
-x <- filter(x, rowname != "b_Intercept")
+
+x <- filter(fixed_effects, ! rowname %in% "Intercept")
+
 
 x$first_anc <- factor(
   x$first_anc,
@@ -106,20 +90,29 @@ p <- ggplot() +
 
 p <- p +
       scale_y_discrete(
-    breaks = paste0("b_", c(
-      "doctor_or_nursing_and_midwifery_per_10000", "fetoscopeoui",
-      "facility_typeFormerDistrictHealthCenter", "facility_typeZoneHospital",
-      "hcw_qualificationMidwife", "hcw_qualificationOther",
-      "health_zoneBanikoara", 
-      "health_zoneCovè/Ouinhi/Zangnanado",
-      "health_zoneKouandé/ Pehunco/Kerou", 
-      "health_zoneLokossa/Athiémé",
-      "health_zoneOuidah/Kpomassè/Tori", 
-      "health_zonePorto-Novo/ Sèmè-Kpodji/ Aguégués",
-      "health_zoneZogbodomey/Bohicon/Zakpota", 
-      "m0_milieuUrban", "number_of_births_2009",
-      "pregnant_women_private_spaceoui", 
-      "time_elapsed_since_start_of_day", "women_in_labour_payoui")),
+        breaks = c(
+          "facility_typeFormerCommunalHealthCenter",
+          "facility_typeFormerDistrictHealthCenter",
+          "facility_typeZoneHospital",
+          "health_zoneBanikoara",
+          "health_zoneCovèDOuinhiDZangnanado",
+          "health_zoneKouandéDPehuncoDKerou",
+          "health_zoneLokossaDAthiémé",
+          "health_zoneOuidahDKpomassèDTori",
+          "health_zonePortoMNovoDSèmèMKpodjiDAguégués",
+          "health_zoneZogbodomeyDBohiconDZakpota",
+          "m0_milieu_unknown",
+          "m0_milieu_urban",
+          "doctor_or_nursing_and_midwifery_per_10000",
+          "women_in_labour_payoui",
+          "pregnant_women_private_spaceoui",
+          "number_of_births_2009",
+          "fetoscopeoui",
+          "fetoscope_unknown",
+          "facility_type_former_communal_health_center", "facility_type_former_district_health_center",
+          "facility_type_zone_hospital", "hcw_qualification_midwife", "hcw_qualification_other",
+          "time_elapsed_since_start_of_day"
+        ),
     labels = c(
       "Doctors/N&M per 10000",
       "Facility has fetoscope",

@@ -9,6 +9,7 @@ library(orderly2)
 library(purrr)
 library(rsample)
 library(scales)
+library(snakecase)
 library(tibble)
 library(tidylog)
 library(tidyr)
@@ -60,7 +61,11 @@ benin_small <- select(
   pregnant_women_private_space, doctor_or_nursing_and_midwifery_per_10000,
   fetoscope, number_of_births_2009, women_in_labour_pay,
   hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
-)
+  )
+
+## Make this snake case to avoid problems when we put the model matrix and
+## the data together
+benin_small$facility_type <- to_snake_case(benin_small$facility_type)
 
 benin_small$hcw_qualification <- case_when(
   !benin_small$hcw_qualification %in% c("Doctor", "Midwife", "Nurese") ~ "Other",
@@ -100,6 +105,16 @@ contrasts_list <- map(
   benin_small[factor_vars], function(x) contrasts(x)
 )
 
+## Scale continuous variables before splitting
+benin_small <- mutate(
+  benin_small,
+  across(
+    c(doctor_or_nursing_and_midwifery_per_10000,
+      number_of_births_2009, time_elapsed_since_start_of_day),
+    scale
+  ))
+
+
 benin_split <- split(
   benin_small, list(benin_dco$first_anc, benin_dco$trimester),
   sep = "_"
@@ -107,10 +122,11 @@ benin_split <- split(
 
 
 benin_split <- map(benin_split, function(x) {
-  walk(factor_vars, function(var) {
+  for (var in factor_vars) {
     x[[var]] <- factor(x[[var]], levels = levels(benin_small[[var]]))
     contrasts(x[[var]]) <- contrasts(benin_small[[var]])
-  })
+  }
+  x
 })
 
 ## Experimental: remove all covariates related to facility, and only use
