@@ -470,7 +470,7 @@ orderly_artefact(
 
 x <- spread(hw_count, hw_category, n)
 x$doctor_or_nursing_and_midwifery <- rowSums(
-  cbind(x$doctor, x$nurse, x$midwife),
+  cbind(x$doctor, x$nurse, x$midwife, x$`head midwife/senior midwife`),
   na.rm = TRUE
 )
 
@@ -517,6 +517,26 @@ benin_dco <- left_join(
 benin_dco <- left_join(
   benin_dco, z,
   by = c("m_id1" = "g_id1"), suffix = c("", "_hw_survey")
+)
+
+benin_dco$time_elapsed_since_start_of_day <- round(benin_dco$time_elapsed_since_start_of_day)
+## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
+benin_dco$fetoscope <- case_when(
+  benin_dco$fetoscope %in% 2L ~ "non",
+  benin_dco$fetoscope %in% 1L ~ "oui",
+  TRUE ~ NA_character_
+)
+
+benin_dco$women_in_labour_pay <- case_when(
+  benin_dco$women_in_labour_pay %in% 2L ~ "non",
+  benin_dco$women_in_labour_pay %in% 1L ~ "oui",
+  TRUE ~ NA_character_
+)
+
+benin_dco$pregnant_women_private_space <- case_when(
+  benin_dco$pregnant_women_private_space %in% 2L ~ "non",
+  benin_dco$pregnant_women_private_space %in% 1L ~ "oui",
+  TRUE ~ NA_character_
 )
 
 saveRDS(benin_dco, "benin_dco.rds")

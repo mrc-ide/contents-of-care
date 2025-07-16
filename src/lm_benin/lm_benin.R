@@ -73,6 +73,8 @@ benin_small$hcw_qualification <- case_when(
 )
 
 benin_small$log_consult_length <- log(benin_small$consult_length)
+## Drop consult_length to avoid it being included as a covariate
+benin_small <- select(benin_small, -consult_length)
 factor_vars <- c(
   "m0_milieu", "health_zone", "facility_type",
   "facility_status", "pregnant_women_private_space",
@@ -110,7 +112,7 @@ benin_small <- mutate(
   benin_small,
   across(
     c(doctor_or_nursing_and_midwifery_per_10000,
-      number_of_births_2009, time_elapsed_since_start_of_day),
+      number_of_births_2009),
     scale
   ))
 
@@ -122,12 +124,21 @@ benin_split <- split(
 
 
 benin_split <- map(benin_split, function(x) {
-  for (var in factor_vars) {
-    x[[var]] <- factor(x[[var]], levels = levels(benin_small[[var]]))
-    contrasts(x[[var]]) <- contrasts(benin_small[[var]])
-  }
+  insuff_levels <- map_int(factor_vars, function(var) length(unique(x[[var]])))
+  insuff_levels <- factor_vars[which(insuff_levels == 1)]
+  ## Drop invariant variables
+  cli::cli_alert(
+    "Dropping {length(insuff_levels)} invariant variables: {insuff_levels}"
+  )
+  x <- x[, !names(x) %in% insuff_levels]
   x
 })
+
+saveRDS(benin_split, "benin_split.rds")
+orderly_artefact(
+  files = "benin_split.rds",
+  description = "Data split by first ANC and trimester"
+)
 
 ## Experimental: remove all covariates related to facility, and only use
 ## facility_id
@@ -139,8 +150,8 @@ benin_split <- map(benin_split, function(x) {
 
 ## Stepwise regression
 models <- map(benin_split, function(x) {
-  x <- select(x, -first_anc, -trimester)
-  full_model <- lm(log(consult_length) ~ (.), data = x)
+  
+  full_model <- lm(log_consult_length ~ (.), data = x)
   scope_terms <- terms(log_consult_length ~ (.), data = x)
 
   final <- step(
