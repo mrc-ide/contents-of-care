@@ -7,6 +7,10 @@ library(readr)
 library(tidylog)
 library(tidyr)
 
+orderly_shared_resource("utils.R")
+source("utils.R")
+
+
 ## Dataset ID: 2768
 ## Data dictionary
 ## https://microdata.worldbank.org/index.php/catalog/2825/data-dictionary/F1?file_name=do_anc_f3_data
@@ -22,7 +26,13 @@ drc_baseline_dco <- rename(
   district = f3_id2,
   health_zone = zs_id,
   ## 1094 NAs in health_facility_type;
-  facility_type = f1_00_01,
+  ## facility_type = f1_00_01, <-- get this from the health facility survey
+  ## This is not a very reliable field, because
+  ## - NA for 76% of the enteries!
+  ## - if we exclude the NA f1_00_01, we have 75 unique facility_ids
+  ## each of which is mapped to a unique value of f1_00_01.
+  ## - for some facility_id, it is NA for all entries
+  ## - for some facility_id, it is different for different entries
   facility_status = f1_00_04
 )
 
@@ -331,6 +341,28 @@ drc_baseline_dco$province <- case_when(
   drc_baseline_dco$province == 7 ~ "South Kivu",
   TRUE ~ as.character(drc_baseline_dco$province) 
 )
+
+## There are 20 rows where consult_length_calc is NA;
+## but consult_length is available for all of them. We use the latter.
+## and then also fill the the consult_start_formatted so that we can get
+## time_elapsed_since_start_of_day.
+idx <- which(is.na(drc_baseline_dco$consult_length_calc))
+drc_baseline_dco <- mutate(
+  drc_baseline_dco,
+  consult_length_calc = ifelse(
+    is.na(consult_length_calc),
+    consult_length, consult_length_calc
+  )
+)
+
+drc_baseline_dco$consult_start_formatted[idx] <-
+  drc_baseline_dco$consult_end_formatted[idx] - drc_baseline_dco$consult_length_calc[idx]
+
+drc_baseline_dco$time_elapsed_since_start_of_day <- as.numeric(
+  drc_baseline_dco$consult_start_formatted - start_of_day,
+  units = "hours"
+) |> round()
+
 
 saveRDS(drc_baseline_dco, "drc_dco_2015.rds")
 orderly_artefact(
