@@ -12,10 +12,10 @@ orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
 orderly_dependency(
-  "lm_burkina_faso_baseline", "latest",
-  files = c("bfa_baseline_dco_fits.rds")
+  "lm_burkina_faso_endline", "latest",
+  files = c("bfa_endline_dco_fits.rds")
 )
-fits <- readRDS("bfa_baseline_dco_fits.rds")
+fits <- readRDS("bfa_endline_dco_fits.rds")
 
 fixed_effects <- map_dfr(fits, function(fit) {
   x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
@@ -27,9 +27,9 @@ fixed_effects <- separate(
   into = c("first_anc", "trimester"), sep = "_"
 )
 
-saveRDS(fixed_effects, file = "bfa_baseline_dco_bayes_fixed_effects.rds")
+saveRDS(fixed_effects, file = "bfa_endline_dco_bayes_fixed_effects.rds")
 orderly_artefact(
-  files = "bfa_baseline_dco_bayes_fixed_effects.rds",
+  files = "bfa_endline_dco_bayes_fixed_effects.rds",
   description = "Fixed effects for DRC 2015 DCO model fits"
 )
 
@@ -51,12 +51,18 @@ breaks <- c(
   "num_personnel_scaled",
   "num_maternal_deaths",
 
+  "patage_i",
+  "patlit_iLiterate",
+  "patmar_iMarried",
   "pregnancy_week",
   "first_pregnancyYes",
   "first_pregnancyUnknown",  
 
+  "hcw_age",
+  "hcw_time_in_service",
   "hcw_sexMale",
   "hcw_sexUnknown",
+  "hcw_qualificationDoctor",
   "hcw_qualificationMidwife",
   "hcw_qualificationNurse",
   "hcw_qualificationOther",
@@ -86,12 +92,19 @@ labels <- c(
   "Personnel in HF",
   "Maternal deaths in HF",
 
+  "Patient age",
+  "Patient literacy:Illiterate",
+  "Patient marital status:Married",
   "Pregnancy week",
   "First pregnancy:Yes",
   "First pregnancy:Unknown",  
 
+  "HCW age",
+  "HCW time in service (years)",
+
   "HCW:Male",
   "HCW sex:Unknown",
+  "Doctor",
   "Midwife",
   "Nurse",
   "Qualification:Other",
@@ -125,18 +138,10 @@ p <- p + scale_y_discrete(breaks = breaks, labels = labels)
 
 ggsave_manuscript(
   p,
-  file = "bfa_baseline_dco_bayes_fixed_effects",
+  file = "bfa_endline_dco_bayes_fixed_effects",
   width = 8, height = 10
 )
 
-## How far have we moved from the priors?
-pquantiles <- qnorm(p = c(0.025, 0.975), mean = 0, sd = 0.5)
-df <- data.frame(
-  first_anc = rep(c("First ANC", "Follow-up ANC"), each = 3),
-  trimester = rep(c("First Trimester", "Second Trimester", "Third Trimester"), times = 2),
-  xmin = pquantiles[1],
-  xmax = pquantiles[2]
-)
 ## Random effects
 ran_effects <- map_dfr(fits, function(fit) {
   x <- ranef(fit, probs = c(0.025, 0.5, 0.975))
@@ -150,10 +155,9 @@ ran_effects <- separate(
 )
 
 
-
-saveRDS(ran_effects, file = "bfa_baseline_dco_bayes_random_effects.rds")
+saveRDS(ran_effects, file = "bfa_endline_dco_bayes_random_effects.rds")
 orderly_artefact(
-  files = "bfa_baseline_dco_bayes_random_effects.rds",
+  files = "bfa_endline_dco_bayes_random_effects.rds",
   description = "Random effects for DRC 2015 DCO model fits"
 )
 
@@ -165,11 +169,6 @@ p <- ggplot() +
     aes(y = rowname, xmin = `Q2.5`, xmax = `Q97.5`),
     height = 0
   ) +
-  geom_rect(
-    data = df,
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf),
-    fill = "grey80", alpha = 0.2
-  ) +
   facet_grid(
     trimester ~ first_anc,
     scales = "free",
@@ -180,33 +179,25 @@ p <- ggplot() +
 
 ggsave_manuscript(
   p,
-  file = "bfa_baseline_dco_bayes_random_effects",
+  file = "bfa_endline_dco_bayes_random_effects",
   width = 8, height = 10
 )
 
-icc <- map(fits, function(fit) {
-  post <- as_draws_df(fit)
-  sd_region <- post$`sd_region_name__Intercept`
-  sigma <- post$`sigma`
-  icc_samples <- sd_region^2 / (sd_region^2 + sigma^2)
+icc <- map(fits, performance::icc)
 
-  mean(icc_samples)
-  quantile(icc_samples, probs = c(0.025, 0.5, 0.975))
-})
-
-saveRDS(icc, file = "bfa_baseline_dco_bayes_icc.rds")
+saveRDS(icc, file = "bfa_endline_dco_bayes_icc.rds")
 
 orderly_artefact(
-  files = "bfa_baseline_dco_bayes_icc.rds",
+  files = "bfa_endline_dco_bayes_icc.rds",
   description = "ICC for DRC 2015 DCO model fits"
 )
 
 
 bayes_r2 <- map(fits, bayes_R2, probs = c(0.025, 0.5, 0.975))
 
-saveRDS(bayes_r2, file = "bfa_baseline_dco_bayes_r2.rds")
+saveRDS(bayes_r2, file = "bfa_endline_dco_bayes_r2.rds")
 
 orderly_artefact(
-  files = "bfa_baseline_dco_bayes_r2.rds",
+  files = "bfa_endline_dco_bayes_r2.rds",
   description = "Bayes R2 for DRC 2015 DCO model fits"
 )

@@ -1,5 +1,6 @@
 library(broom)
 library(brms)
+library(cli)
 library(dplyr)
 library(ggplot2)
 library(ggpmisc)
@@ -20,40 +21,8 @@ library(tidyr)
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
-
-
-
 orderly_dependency("process_benin", "latest", files = c("benin_dco.rds"))
 benin_dco <- readRDS("benin_dco.rds")
-
-benin_dco$time_elapsed_since_start_of_day <- round(benin_dco$time_elapsed_since_start_of_day)
-## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
-benin_dco$fetoscope <- case_when(
-  benin_dco$fetoscope %in% 2L ~ "non",
-  benin_dco$fetoscope %in% 1L ~ "oui",
-  TRUE ~ NA_character_
-)
-
-benin_dco$women_in_labour_pay <- case_when(
-  benin_dco$women_in_labour_pay %in% 2L ~ "non",
-  benin_dco$women_in_labour_pay %in% 1L ~ "oui",
-  TRUE ~ NA_character_
-)
-
-benin_dco$pregnant_women_private_space <- case_when(
-  benin_dco$pregnant_women_private_space %in% 2L ~ "non",
-  benin_dco$pregnant_women_private_space %in% 1L ~ "oui",
-  TRUE ~ NA_character_
-)
-
-##first_anc_labels <- c(oui = "First ANC: Yes", non = "First ANC: No")
-
-## benin_dco$first_anc <- factor(
-##   benin_dco$first_anc,
-##   levels = c("oui", "non")
-##   ##labels = first_anc_labels
-## )
-
 
 benin_small <- select(
   benin_dco, consult_length,
@@ -61,14 +30,15 @@ benin_small <- select(
   pregnant_women_private_space, doctor_or_nursing_and_midwifery_per_10000,
   fetoscope, number_of_births_2009, women_in_labour_pay,
   hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
-  )
+)
 
 ## Make this snake case to avoid problems when we put the model matrix and
 ## the data together
 benin_small$facility_type <- to_snake_case(benin_small$facility_type)
 
 benin_small$hcw_qualification <- case_when(
-  !benin_small$hcw_qualification %in% c("Doctor", "Midwife", "Nurese") ~ "Other",
+  !benin_small$hcw_qualification %in%
+    c("Doctor", "Midwife", "Nurse") ~ "Other",
   TRUE ~ benin_small$hcw_qualification
 )
 
@@ -82,9 +52,11 @@ factor_vars <- c(
   "hcw_qualification", "first_anc", "trimester"
 )
 
+
 ## Make NAs into "Unknown"
 benin_small <- mutate(
   benin_small, across(all_of(factor_vars), function(x) {
+    x <- as.character(x)
     x[is.na(x)] <- "Unknown"
     x
   }
@@ -93,29 +65,21 @@ benin_small <- mutate(
 
 set.seed(42)
 
-## Build contrasts before splitting the data, to avoid insufficient
-## levels in the factors
-benin_small <- mutate(
-  benin_small, across(all_of(factor_vars), function(x) {
-    x <- factor(x)
-    contrasts(x) <- contr.treatment(levels(x), contrasts = TRUE)
-    x
-  })
-)
-
-contrasts_list <- map(
-  benin_small[factor_vars], function(x) contrasts(x)
-)
 
 ## Scale continuous variables before splitting
+cols_to_scale <- "doctor_or_nursing_and_midwifery_per_10000"
+ 
 benin_small <- mutate(
   benin_small,
   across(
-    c(doctor_or_nursing_and_midwifery_per_10000,
-      number_of_births_2009),
-    scale
-  ))
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
 
+## Drop unscaled vars
+benin_small <- select(benin_small, -all_of(cols_to_scale))
 
 benin_split <- split(
   benin_small, list(benin_dco$first_anc, benin_dco$trimester),

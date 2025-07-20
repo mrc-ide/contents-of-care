@@ -1,3 +1,4 @@
+
 library(brms)
 library(dplyr)
 library(ggplot2)
@@ -12,10 +13,10 @@ orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
 orderly_dependency(
-  "lm_burkina_faso_baseline", "latest",
-  files = c("bfa_baseline_dco_fits.rds")
+  "lm_burkina_faso", "latest",
+  files = c("bfa_both_dco_fits.rds")
 )
-fits <- readRDS("bfa_baseline_dco_fits.rds")
+fits <- readRDS("bfa_both_dco_fits.rds")
 
 fixed_effects <- map_dfr(fits, function(fit) {
   x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
@@ -27,9 +28,9 @@ fixed_effects <- separate(
   into = c("first_anc", "trimester"), sep = "_"
 )
 
-saveRDS(fixed_effects, file = "bfa_baseline_dco_bayes_fixed_effects.rds")
+saveRDS(fixed_effects, file = "bfa_both_dco_bayes_fixed_effects.rds")
 orderly_artefact(
-  files = "bfa_baseline_dco_bayes_fixed_effects.rds",
+  files = "bfa_both_dco_bayes_fixed_effects.rds",
   description = "Fixed effects for DRC 2015 DCO model fits"
 )
 
@@ -57,6 +58,7 @@ breaks <- c(
 
   "hcw_sexMale",
   "hcw_sexUnknown",
+  "hcw_qualificationDoctor",
   "hcw_qualificationMidwife",
   "hcw_qualificationNurse",
   "hcw_qualificationOther",
@@ -84,7 +86,7 @@ labels <- c(
   "Total attendance last month",
   "Attendance pregnant women last month",
   "Personnel in HF",
-  "Maternal deaths in HF",
+  "Maternal deaths",
 
   "Pregnancy week",
   "First pregnancy:Yes",
@@ -92,6 +94,7 @@ labels <- c(
 
   "HCW:Male",
   "HCW sex:Unknown",
+  "Doctor",
   "Midwife",
   "Nurse",
   "Qualification:Other",
@@ -125,7 +128,7 @@ p <- p + scale_y_discrete(breaks = breaks, labels = labels)
 
 ggsave_manuscript(
   p,
-  file = "bfa_baseline_dco_bayes_fixed_effects",
+  file = "bfa_both_dco_bayes_fixed_effects",
   width = 8, height = 10
 )
 
@@ -151,9 +154,9 @@ ran_effects <- separate(
 
 
 
-saveRDS(ran_effects, file = "bfa_baseline_dco_bayes_random_effects.rds")
+saveRDS(ran_effects, file = "bfa_both_dco_bayes_random_effects.rds")
 orderly_artefact(
-  files = "bfa_baseline_dco_bayes_random_effects.rds",
+  files = "bfa_both_dco_bayes_random_effects.rds",
   description = "Random effects for DRC 2015 DCO model fits"
 )
 
@@ -180,7 +183,7 @@ p <- ggplot() +
 
 ggsave_manuscript(
   p,
-  file = "bfa_baseline_dco_bayes_random_effects",
+  file = "bfa_both_dco_bayes_random_effects",
   width = 8, height = 10
 )
 
@@ -192,21 +195,22 @@ icc <- map(fits, function(fit) {
 
   mean(icc_samples)
   quantile(icc_samples, probs = c(0.025, 0.5, 0.975))
+
 })
 
-saveRDS(icc, file = "bfa_baseline_dco_bayes_icc.rds")
+saveRDS(icc, file = "bfa_both_dco_bayes_icc.rds")
 
 orderly_artefact(
-  files = "bfa_baseline_dco_bayes_icc.rds",
+  files = "bfa_both_dco_bayes_icc.rds",
   description = "ICC for DRC 2015 DCO model fits"
 )
 
 
 bayes_r2 <- map(fits, bayes_R2, probs = c(0.025, 0.5, 0.975))
 
-saveRDS(bayes_r2, file = "bfa_baseline_dco_bayes_r2.rds")
+saveRDS(bayes_r2, file = "bfa_both_dco_bayes_r2.rds")
 
 orderly_artefact(
-  files = "bfa_baseline_dco_bayes_r2.rds",
+  files = "bfa_both_dco_bayes_r2.rds",
   description = "Bayes R2 for DRC 2015 DCO model fits"
 )

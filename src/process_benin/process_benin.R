@@ -519,7 +519,7 @@ benin_dco <- left_join(
   by = c("m_id1" = "g_id1"), suffix = c("", "_hw_survey")
 )
 
-benin_dco$time_elapsed_since_start_of_day <- round(benin_dco$time_elapsed_since_start_of_day)
+
 ## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
 benin_dco$fetoscope <- case_when(
   benin_dco$fetoscope %in% 2L ~ "non",
