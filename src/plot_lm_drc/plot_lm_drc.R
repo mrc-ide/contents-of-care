@@ -194,8 +194,23 @@ orderly_artefact(
 bayes_r2 <- map(fits, bayes_R2, probs = c(0.025, 0.5, 0.975))
 
 saveRDS(bayes_r2, file = "drc_dco_bayes_r2.rds")
-
 orderly_artefact(
   files = "drc_dco_bayes_r2.rds",
   description = "Bayes R2 for DRC 2015 DCO model fits"
 )
+
+coeffs_gt_0 <- map_dfr(
+  fits, function(fit) probability_of_direction(fit)[[1]],
+  .id = "datacut"
+)
+coeffs_gt_0 <- separate(
+  coeffs_gt_0, datacut,
+  into = c("first_anc", "trimester"), sep = "_"
+)
+
+saveRDS(coeffs_gt_0, file = "drc_dco_bayes_coeffs_gt_0.rds")
+orderly_artefact(
+  files = "drc_dco_bayes_coeffs_gt_0.rds",
+  description = "Coefficients greater than 0 for DRC 2015 DCO model fits"
+)
+

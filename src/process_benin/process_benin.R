@@ -112,7 +112,8 @@ benin <- relocate(benin, pregnancy_stage, .after = sp_ensured3)
 
 start <- hm(paste(benin$hour_start, benin$min_start, sep = ":"))
 end <- hm(paste(benin$hour_end, benin$min_end, sep = ":"))
-benin$time_elapsed_since_start_of_day <- time_length(start - start_of_day, unit = "hour")
+benin$time_elapsed_since_start_of_day <-
+  time_length(start - start_of_day, unit = "hour")
 benin$consult_length <- time_length(end - start, unit = "minute")
 
 
@@ -129,11 +130,13 @@ benin$health_zone <- case_when(
   benin$health_zone %in% 10 ~ "Savè/Ouèssè",
   TRUE ~ NA_character_
 )
+
 benin$m0_milieu <- case_when(
   benin$m0_milieu %in% 1 ~ "Urban",
   benin$m0_milieu %in% 2 ~ "Rural",
   TRUE ~ NA_character_
 )
+benin <- rename(benin, milieu_of_residence = m0_milieu)
 
 benin$trimester <- case_when(
   benin$trimester %in% "premier trimestre" ~ "First Trimester",
@@ -148,15 +151,10 @@ benin$hcw_qualification <- case_when(
   benin$hcw_qualification %in% 1 ~ "Doctor",
   benin$hcw_qualification %in% 2 ~ "Nurse",
   benin$hcw_qualification %in% 3 ~ "Midwife",
-  benin$hcw_qualification %in% 4 ~ "Biologist",
-  benin$hcw_qualification %in% 5 ~ "Pharmacist",
-  benin$hcw_qualification %in% 6 ~ "Medical Imaging Technician",
-  benin$hcw_qualification %in% 7 ~ "Administrator",
-  benin$hcw_qualification %in% 8 ~ "Caregiver",
-  benin$hcw_qualification %in% 9 ~ "Hygiene and Sanitation Agent",
-  benin$hcw_qualification %in% 10 ~ "Other",
-  TRUE ~ NA_character_
+  TRUE ~ "Other"
 )
+
+
 
 saveRDS(benin, "benin_2010_dco.rds")
 
@@ -358,14 +356,19 @@ facility_survey_admin$facility_type <- case_when(
   TRUE ~ NA_character_
 )
 
-facility_survey_admin$facility_status <- case_when(
-  facility_survey_admin$e1_2 == 1 ~ "Public",
-  facility_survey_admin$e1_2 == 2 ~ "Semi-public",
-  facility_survey_admin$e1_2 == 3 ~ "Private",
-  facility_survey_admin$e1_2 == 4 ~ "NGO",
-  facility_survey_admin$e1_2 == 5 ~ "Religious",
-  facility_survey_admin$e1_2 == 96 ~ "Other",
+## Drop this var as it is too detailed for our purposes
+facility_survey_admin <- select(facility_survey_admin, -facility_type)
+
+facility_survey_admin$facility_level_mapping <- case_when(
+  facility_survey_admin$e1_1 %in% c(1, 2) ~ "Tertiary",
+  facility_survey_admin$e1_1 %in% 3 ~ "Secondary",
+  facility_survey_admin$e1_1 %in% 4:11 ~ "Primary",
   TRUE ~ NA_character_
+)
+
+facility_survey_admin$facility_status_mapping <- case_when(
+  facility_survey_admin$e1_2 == 1 ~ "Public",
+  TRUE ~ "Other"
 )
 
 saveRDS(facility_survey_admin, "benin_facility_survey_admin.rds")
@@ -522,20 +525,20 @@ benin_dco <- left_join(
 
 ## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
 benin_dco$fetoscope <- case_when(
-  benin_dco$fetoscope %in% 2L ~ "non",
-  benin_dco$fetoscope %in% 1L ~ "oui",
+  benin_dco$fetoscope %in% 2L ~ "No",
+  benin_dco$fetoscope %in% 1L ~ "Yes",
   TRUE ~ NA_character_
 )
 
 benin_dco$women_in_labour_pay <- case_when(
-  benin_dco$women_in_labour_pay %in% 2L ~ "non",
-  benin_dco$women_in_labour_pay %in% 1L ~ "oui",
+  benin_dco$women_in_labour_pay %in% 2L ~ "No",
+  benin_dco$women_in_labour_pay %in% 1L ~ "Yes",
   TRUE ~ NA_character_
 )
 
 benin_dco$pregnant_women_private_space <- case_when(
-  benin_dco$pregnant_women_private_space %in% 2L ~ "non",
-  benin_dco$pregnant_women_private_space %in% 1L ~ "oui",
+  benin_dco$pregnant_women_private_space %in% 2L ~ "No",
+  benin_dco$pregnant_women_private_space %in% 1L ~ "Yes",
   TRUE ~ NA_character_
 )
 

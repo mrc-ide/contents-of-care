@@ -13,7 +13,7 @@ fits <- map(bfa_split, function(x) {
   )
   x <- select(x, -names(insuff_levels))
   brm(
-    formula = bf(log_consult_length ~ . -region_name + (1 | region_name)),
+    formula = bf(log_consult_length ~ . - region_name + (1 | region_name)),
     data = x,
     family = gaussian(),
     drop_unused_levels = TRUE,
@@ -25,8 +25,8 @@ fits <- map(bfa_split, function(x) {
   )
 })
 
-saveRDS(fits, file = "bfa_endline_dco_fits.rds")
+saveRDS(fits, file = "bfa_both_dco_fits.rds")
 orderly_artefact(
-  files = "bfa_endline_dco_fits.rds",
-  description = "BFA endline DCO model fits"
+  files = "bfa_both_dco_fits.rds",
+  description = "BFA baseline and endline DCO model fits"
 )

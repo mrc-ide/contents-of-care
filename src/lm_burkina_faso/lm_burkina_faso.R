@@ -1,10 +1,14 @@
 library(broom)
+library(cli)
 library(dplyr)
 library(ggplot2)
+library(ggpmisc)
+library(glue)
 library(glmnet)
 library(orderly2)
 library(purrr)
 library(rsample)
+library(scales)
 library(tibble)
 library(tidylog)
 library(tidyr)
@@ -17,61 +21,60 @@ bfa_dco <- readRDS("bfa_dco.rds")
 
 
 bfa_small <- select(
-  bfa_dco, consult_length = consult_length_calc,
-  facility_type, hcw_sex, hcw_qualification,
+  bfa_dco,
+  consult_length = consult_length_calc,
+  ## HF attributes
+  region_name,
+  num_csps_in_district = EFF,
+  num_personnel = PERSO,
+  milieu_of_residence = milieu_of_residence.x,
   doctor_or_nursing_and_midwifery_per_10000,
-  first_anc, trimester, time_elapsed_since_start_of_day,
-  first_pregnancy, consult_language,
-  region = `REGION.x`
+  facility_level_mapping = facility_level_mapping.x,
+  total_attendance,
+  attendance_pregnant_women,
+  num_maternal_deaths,
+  ## patient attributes
+  first_anc,
+  trimester,
+  pregnancy_week,
+  first_pregnancy,
+  ## HCW attributes
+  hcw_sex,
+  hcw_qualification,
+  ## Appointment attributes
+  consult_language,
+  time_elapsed_since_start_of_day
 )
 
-bfa_small$facility_type <- case_when(
-  bfa_small$facility_type %in% "government facility" ~ "Public",
-  ! bfa_small$facility_type %in% "government facility" ~ "Not Public",
-  TRUE ~ NA_character_
-)
 
-bfa_small$hcw_sex <- case_when(
-  bfa_small$hcw_sex %in% 1 ~ "Male",
-  bfa_small$hcw_sex %in% 2 ~ "Female",
-  TRUE ~ NA_character_
-)
-
-
-bfa_small$region <- case_when(
-  bfa_small$region %in% 1 ~ "Boucle du Mouhoun",
-  bfa_small$region %in% 2 ~ "Centre-Est",
-  bfa_small$region %in% 3 ~ "Centre-Nord",
-  bfa_small$region %in% 4 ~ "Centre-Ouest",
-  bfa_small$region %in% 5 ~ "Nord",
-  bfa_small$region %in% 6 ~ "Sud-Quest",
-  TRUE ~ NA_character_
-)
-
-bfa_small$consult_language <- case_when(
-  bfa_small$consult_language %in% 1 ~ "French",
-  bfa_small$consult_language %in% 2 ~ "Moore",
-  bfa_small$consult_language %in% 3 ~ "Dioula",
-  bfa_small$consult_language %in% c(4:10, 97) ~ "Other",
-  TRUE ~ NA_character_
-)
-
-bfa_small$first_pregnancy <- case_when(
-  bfa_small$first_pregnancy %in% 1 ~ "Yes",
-  bfa_small$first_pregnancy %in% 2 ~ "No",
-  TRUE ~ NA_character_
-)
 
 bfa_small <- filter(bfa_small, consult_length != 0)
 bfa_small$log_consult_length <- log(bfa_small$consult_length)
-
 bfa_small <- mutate_if(
   bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
 )
+## Remove missing continuous variables
+bfa_small <- bfa_small[complete.cases(bfa_small), ]
+## Scale continuous variables
+cols_to_scale <- c(
+  "num_csps_in_district",
+  "doctor_or_nursing_and_midwifery_per_10000",
+  "total_attendance",
+  "attendance_pregnant_women",
+  "num_personnel"
+)
+bfa_small <- mutate(
+  bfa_small,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+bfa_small <- select(bfa_small, -all_of(cols_to_scale))
 
 set.seed(42)
 
-## Stratify by facility type and first ANC; 97% of the observations are from government facilities
 bfa_split <- split(
   bfa_small,
   list(bfa_small$first_anc, bfa_small$trimester),
@@ -83,11 +86,8 @@ map(bfa_split, nrow)
 map(bfa_split, function(x) {
   map(x, ~ sum(is.na(.))) |> keep(~ . > 0)
 })
-##bfa_split <- keep(bfa_split, function(x) nrow(x) >= 30)
-bfa_split <- map(bfa_split, na.omit)
-## Remove strata with very few observations
-bfa_split <- keep(bfa_split, function(x) nrow(x) >= 30)
-## This retains 48 observations with unknown trimster
+
+
 models <- map(bfa_split, function(x) {
   x <- select(x, -first_anc, -trimester, -consult_length)
   insuff_levels <- map(x, ~ length(unique(.))) |> keep(~ . < 2)
@@ -217,5 +217,3 @@ ggsave_manuscript("bfa_stepwise", p1, width = 12, height = 8)
 orderly_resource("lm_burkina_faso_multilevel.R")
 source("lm_burkina_faso_multilevel.R")
 
-orderly_resource("lm_burkina_faso_lasso.R")
-source("lm_burkina_faso_lasso.R")

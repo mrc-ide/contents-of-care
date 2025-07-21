@@ -5,6 +5,7 @@ library(orderly2)
 library(performance)
 library(posterior)
 library(purrr)
+library(tibble)
 library(tidyr)
 
 orderly_shared_resource(utils.R = "utils.R")
@@ -15,7 +16,7 @@ fits <- readRDS("benin_dco_fits.rds")
 
 fixed_effects <- map_dfr(fits, function(fit) {
   x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
-  tibble::rownames_to_column(x)
+  rownames_to_column(x)
 }, .id = "datacut")
 
 fixed_effects <- separate(
@@ -46,15 +47,13 @@ breaks <- c(
   "health_zoneOuidahDKpomassèDTori",
   "health_zonePortoMNovoDSèmèMKpodjiDAguégués",
   "health_zoneZogbodomeyDBohiconDZakpota",
-  "m0_milieuUrban",
-  "m0_milieuUnknown",
-  "facility_typeformer_communal_health_center",
-  "facility_typeformer_district_health_center",
-  "facility_typezone_hospital",
-  "facility_statusSemiMpublic",
-  "women_in_labour_payoui",
-  "pregnant_women_private_spaceoui",
-  "fetoscopeoui",
+  "milieu_of_residenceUrban",
+  "milieu_of_residenceUnknown",
+  "facility_level_mappingSecondary",
+  "facility_status_mappingPublic",
+  "women_in_labour_payYes",
+  "pregnant_women_private_spaceYes",
+  "fetoscopeYes",
   "fetoscopeUnknown",
   "number_of_births_2009",
   "doctor_or_nursing_and_midwifery_per_10000_scaled",
@@ -76,10 +75,8 @@ labels <- c(
   "ZogbodomeyDBohiconDZakpota",
   "Urban",
   "Unknown",
-  "Former communal health center",
-  "Former district health_center",
-  "Zone hospital",
-  "Semi-public",
+  "Secondary facility",
+  "Public facility",
   "Women in labour pay",
   "Pregnant women private space",
   "Fetoscope: yes",
@@ -121,7 +118,7 @@ ggsave_manuscript(
 ran_effects <- map_dfr(fits, function(fit) {
   x <- ranef(fit, probs = c(0.025, 0.5, 0.975))
   x <- as.data.frame(x$health_zone[, , "Intercept"])
-  tibble::rownames_to_column(x)
+  rownames_to_column(x)
 }, .id = "datacut")
 
 ran_effects <- separate(
@@ -181,4 +178,19 @@ saveRDS(bayes_r2, file = "benin_dco_bayes_r2.rds")
 orderly_artefact(
   files = "benin_dco_bayes_r2.rds",
   description = "Bayes R2 for DRC 2015 DCO model fits"
+)
+
+coeffs_gt_0 <- map_dfr(
+  fits, function(fit) probability_of_direction(fit)[[1]],
+  .id = "datacut"
+)
+coeffs_gt_0 <- separate(
+  coeffs_gt_0, datacut,
+  into = c("first_anc", "trimester"), sep = "_"
+)
+
+saveRDS(coeffs_gt_0, file = "benin_dco_bayes_coeffs_gt_0.rds")
+orderly_artefact(
+  files = "benin_dco_bayes_coeffs_gt_0.rds",
+  description = "Coefficients greater than 0 for DRC 2015 DCO model fits"
 )

@@ -34,6 +34,7 @@ bfa_small <- select(
   facility_level_mapping = facility_level_mapping.x,
   total_attendance,
   attendance_pregnant_women,
+  num_maternal_deaths,
   ## patient attributes
   first_anc,
   trimester,

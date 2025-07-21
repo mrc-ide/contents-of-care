@@ -1,10 +1,5 @@
 library(brms)
 
-prior_spec <- c(
-  prior(normal(0, 1), class = b), # fixed effects
-  prior(normal(0, 0.5), class = sd) # random effects
-)
-
 fits <- map(bfa_split, function(x) {
   x <- select(x, -first_anc, -trimester, -consult_length)
   insuff_levels <- map(x, ~ length(unique(.))) |> keep(~ . < 2)
@@ -13,7 +8,7 @@ fits <- map(bfa_split, function(x) {
   )
   x <- select(x, -names(insuff_levels))
   brm(
-    formula = bf(log_consult_length ~ . + (1 | region_name)),
+    formula = bf(log_consult_length ~ . - region_name + (1 | region_name)),
     data = x,
     family = gaussian(),
     drop_unused_levels = TRUE,

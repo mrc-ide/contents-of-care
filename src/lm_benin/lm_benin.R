@@ -24,30 +24,43 @@ source("utils.R")
 orderly_dependency("process_benin", "latest", files = c("benin_dco.rds"))
 benin_dco <- readRDS("benin_dco.rds")
 
+
+
 benin_small <- select(
   benin_dco, consult_length,
-  m0_milieu, health_zone, facility_type, facility_status,
+  milieu_of_residence, health_zone,
+  facility_level_mapping,
+  facility_status_mapping,
   pregnant_women_private_space, doctor_or_nursing_and_midwifery_per_10000,
   fetoscope, number_of_births_2009, women_in_labour_pay,
   hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
+  )
+
+benin_small$first_anc <- case_when(
+  benin_small$first_anc %in% "oui" ~ "First ANC",
+  benin_small$first_anc %in% "non" ~ "Follow-up ANC",
+  TRUE ~ benin_small$first_anc
 )
 
-## Make this snake case to avoid problems when we put the model matrix and
-## the data together
-benin_small$facility_type <- to_snake_case(benin_small$facility_type)
 
 benin_small$hcw_qualification <- case_when(
   !benin_small$hcw_qualification %in%
     c("Doctor", "Midwife", "Nurse") ~ "Other",
   TRUE ~ benin_small$hcw_qualification
 )
+benin_dco$hcw_qualification <- factor(benin_dco$hcw_qualification)
+benin_dco$hcw_qualification <- relevel(
+  benin_dco$hcw_qualification, ref = "Doctor"
+)
+
 
 benin_small$log_consult_length <- log(benin_small$consult_length)
 ## Drop consult_length to avoid it being included as a covariate
 benin_small <- select(benin_small, -consult_length)
+
 factor_vars <- c(
-  "m0_milieu", "health_zone", "facility_type",
-  "facility_status", "pregnant_women_private_space",
+  "milieu_of_residence", "health_zone", "facility_level_mapping",
+  "facility_status_mapping", "pregnant_women_private_space",
   "fetoscope", "women_in_labour_pay",
   "hcw_qualification", "first_anc", "trimester"
 )
@@ -103,13 +116,6 @@ orderly_artefact(
   files = "benin_split.rds",
   description = "Data split by first ANC and trimester"
 )
-
-## Experimental: remove all covariates related to facility, and only use
-## facility_id
-
-
-
-
 
 
 ## Stepwise regression
@@ -175,7 +181,7 @@ p <- ggplot(coeffs[coeffs$term != "(Intercept)", ]) +
   ) +
   scale_y_discrete(
     breaks = c(
-      "m0_milieuUrban", 
+      "milieu_of_residenceUrban",
       "health_zoneBanikoara",
       "health_zoneCovè/Ouinhi/Zangnanado",
       "health_zoneKouandé/ Pehunco/Kerou",
@@ -184,14 +190,14 @@ p <- ggplot(coeffs[coeffs$term != "(Intercept)", ]) +
       "health_zonePorto-Novo/ Sèmè-Kpodji/ Aguégués",
       "health_zoneZogbodomey/Bohicon/Zakpota",
       "number_of_births_2009",
-      "women_in_labour_payoui",
-      "pregnant_women_private_spaceoui",
-      "doctor_or_nursing_and_midwifery_per_10000",
-      "fetoscopeoui",
+      "women_in_labour_payYes",
+      "pregnant_women_private_spaceYes",
+      "doctor_or_nursing_and_midwifery_per_10000_scaled",
+      "fetoscopeYes",
       "fetoscopeUnknown",
-      "facility_typeFormer Communal Health Center",
-      "facility_typeFormer District Health Center",
-      "facility_typeZone Hospital",
+      "facility_status_mappingPublic",
+      "facility_level_mappingSecondary",
+      "hcw_qualificationNurse",
       "hcw_qualificationMidwife",
       "hcw_qualificationOther", 
       "time_elapsed_since_start_of_day"
@@ -211,16 +217,18 @@ p <- ggplot(coeffs[coeffs$term != "(Intercept)", ]) +
       "Doctors/N&M per 10000",
       "Fetoscope: Yes",
       "Fetoscope: Unknown",
-      "Former Communal Health Center",
-      "Former District Health Center",
-      "Zone Hospital",
+      "Public Facility",
+      "Secondary Facility",
+      "Nurse",
       "Midwife",
       "Other", 
       "Hours elapsed since 6AM" 
       ),
   ) +
   theme_manuscript() +
-  theme(axis.text.y = element_text(size = 10), legend.title = element_text(size = 12)) +
+  theme(
+    axis.text.y = element_text(size = 10), legend.title = element_text(size = 12)
+  ) +
   labs(x = "Estimate", color = "Significant") 
 
 

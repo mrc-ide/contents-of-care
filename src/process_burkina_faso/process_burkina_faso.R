@@ -242,9 +242,9 @@ bfa_hf_survey$facility_level_name <- case_when(
 )
 
 bfa_hf_survey$facility_level_mapping <- case_when(
-  bfa_hf_survey$facility_level_name %in% c("CSPS") ~ "Primary health care",
+  bfa_hf_survey$facility_level_name %in% c("CSPS") ~ "Primary",
   bfa_hf_survey$facility_level %in% c("Medical center", "District hospital") ~
-    "Secondary health care",
+    "Secondary",
   TRUE ~ "Other"
 )
 

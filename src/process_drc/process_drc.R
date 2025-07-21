@@ -22,9 +22,9 @@ drc_baseline_dco <- read_csv("drc_baseline_dco.csv")
 
 drc_baseline_dco <- rename(
   drc_baseline_dco,
-  province = f3_id1, ## provice; 12 of these in DRC
-  district = f3_id2,
-  health_zone = zs_id,
+  ## province = f3_id1, ## provice; 12 of these in DRC
+  ##district = f3_id2,
+  ## health_zone = zs_id,
   ## 1094 NAs in health_facility_type;
   ## facility_type = f1_00_01, <-- get this from the health facility survey
   ## This is not a very reliable field, because
@@ -33,28 +33,10 @@ drc_baseline_dco <- rename(
   ## each of which is mapped to a unique value of f1_00_01.
   ## - for some facility_id, it is NA for all entries
   ## - for some facility_id, it is different for different entries
-  facility_status = f1_00_04
+  ## facility_status = f1_00_04 <- get this from the health facility survey
 )
 
-drc_baseline_dco$facility_status <- case_when(
-  drc_baseline_dco$facility_status == 1 ~ "Public",
-  drc_baseline_dco$facility_status == 2 ~ "Private for profit",
-  drc_baseline_dco$facility_status == 3 ~ "Private not for profit",
-  drc_baseline_dco$facility_status == 4 ~ "Faith-based",
-  drc_baseline_dco$facility_status == 5 ~ "Public-private partnership",
-  TRUE ~ as.character(drc_baseline_dco$facility_status)
-) 
 
-drc_baseline_dco <- rename(
-  drc_baseline_dco,
-  milieu_of_residence = f3_00_07
-)
-
-drc_baseline_dco$milieu_of_residence <- case_when(
-  drc_baseline_dco$milieu_of_residence == 1 ~ "Urban",
-  drc_baseline_dco$milieu_of_residence == 2 ~ "Rural",
-  TRUE ~ as.character(drc_baseline_dco$milieu_of_residence)
-)
   
 drc_baseline_dco <- rename(
   drc_baseline_dco,
@@ -68,14 +50,13 @@ drc_baseline_dco <- rename(
 )
 
 drc_baseline_dco$first_anc <- case_when(
-  drc_baseline_dco$num_prev_anc_visits == 0 ~ "yes",
-  drc_baseline_dco$num_prev_anc_visits > 0 ~ "no",
+  drc_baseline_dco$num_prev_anc_visits == 0 ~ "First ANC",
+  drc_baseline_dco$num_prev_anc_visits > 0 ~ "Follow-up ANC",
   TRUE ~ NA_character_
 ) 
 
 drc_baseline_dco <- rename(
-  drc_baseline_dco,
-  pregnancy_in_weeks = f3_01_03
+  drc_baseline_dco, pregnancy_in_weeks = f3_01_03
 )
 
 drc_baseline_dco$pregnancy_in_weeks <- case_when(
@@ -99,7 +80,7 @@ drc_baseline_dco <- rename(
 
 drc_baseline_dco$first_pregnancy <- factor(
   drc_baseline_dco$first_pregnancy,
-  levels = c(1, 2), labels = c("yes", "no")
+  levels = c(1, 2), labels = c("Yes", "No")
 )
 
 
@@ -151,7 +132,7 @@ drc_baseline_dco <- filter(
 drc_baseline_dco <- mutate(
   drc_baseline_dco,
   across(
-    c(start_time_of_consultation,end_time_of_consultation),
+    c(start_time_of_consultation, end_time_of_consultation),
     ~ sprintf("%04d", .)))
 
 drc_baseline_dco <- mutate(
@@ -331,16 +312,6 @@ drc_baseline_dco$consultation_language <- case_when(
 
 
 
-drc_baseline_dco$province <- case_when(
-  drc_baseline_dco$province == 1 ~ "Bandundu",
-  drc_baseline_dco$province == 2 ~ "Ecuador",
-  drc_baseline_dco$province == 3 ~ "Katanga",
-  drc_baseline_dco$province == 4 ~ "Maniema",
-  drc_baseline_dco$province == 5 ~ "Katanga (comparison)",
-  drc_baseline_dco$province == 6 ~ "North Kivu",
-  drc_baseline_dco$province == 7 ~ "South Kivu",
-  TRUE ~ as.character(drc_baseline_dco$province) 
-)
 
 ## There are 20 rows where consult_length_calc is NA;
 ## but consult_length is available for all of them. We use the latter.
@@ -361,7 +332,7 @@ drc_baseline_dco$consult_start_formatted[idx] <-
 drc_baseline_dco$time_elapsed_since_start_of_day <- as.numeric(
   drc_baseline_dco$consult_start_formatted - start_of_day,
   units = "hours"
-) |> round()
+) 
 
 
 saveRDS(drc_baseline_dco, "drc_dco_2015.rds")
@@ -404,6 +375,12 @@ drc_baseline_hf$facility_status <- case_when(
   drc_baseline_hf$f1_00_04 == 3 ~ "Private not-for-profit",
   drc_baseline_hf$f1_00_04 == 4 ~ "Faith-based",
   drc_baseline_hf$f1_00_04 == 5 ~ "Public-private partnership",
+  TRUE ~ as.character(drc_baseline_hf$f1_00_04)
+)
+
+drc_baseline_hf$facility_status_mapping  <- case_when(
+  drc_baseline_hf$f1_00_04 == 1 ~ "Public",
+  drc_baseline_hf$f1_00_04 != 1 ~ "Other",
   TRUE ~ as.character(drc_baseline_hf$f1_00_04)
 )
 
@@ -711,3 +688,4 @@ orderly_artefact(
 
   
 
+## orderly_cleanup()

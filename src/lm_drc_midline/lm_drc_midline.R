@@ -2,12 +2,14 @@ library(broom)
 library(dplyr)
 library(ggforce)
 library(ggplot2)
+library(ggpmisc)
 library(glmnet)
 library(glue)
 library(lubridate)
 library(orderly2)
 library(purrr)
 library(rsample)
+library(scales)
 library(tibble)
 library(tidylog)
 library(tidyr)
@@ -34,6 +36,8 @@ full_model <- function(df) {
 
 
 
+orderly_shared_resource("utils.R")
+source("utils.R")
 
 
 orderly_dependency(
@@ -42,11 +46,11 @@ orderly_dependency(
 )
 
 drc_dco_midline <- readRDS("drc_midline_dco.rds")
-start_of_day <- hm("06:00")
+
 drc_dco_midline$time_elapsed_since_start_of_day <- as.numeric(
   drc_dco_midline$start_time_of_consultation - start_of_day,
-  units = "mins"
-)
+  units = "hour"
+) |> round()
 
 drc_midline_small <- select(
   drc_dco_midline, consult_length_calc,
@@ -56,6 +60,10 @@ drc_midline_small <- select(
   hcw_sex, hcw_qualification,
   consultation_language,
   time_elapsed_since_start_of_day
+)
+
+drc_midline_small <- mutate_if(
+  drc_midline_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
 )
 
 ## There is only one observation with language French
@@ -89,8 +97,111 @@ drc_midline_split <- split(
 
 ## Remove strata with less than 30 observations
 map(drc_midline_split, nrow)
-drc_midline_split <- keep(drc_midline_split, function(x) nrow(x) >= 30)
-drc_midline_split <- map(drc_midline_split, na.omit)
+map(drc_midline_split, function(x) {
+  map(x, ~ sum(is.na(.))) |> keep(~ . > 0)
+})
+
+##drc_midline_split <- keep(drc_midline_split, function(x) nrow(x) >= 30)
+##drc_midline_split <- map(drc_midline_split, na.omit)
+
+## Exclude because 5 observations
+drc_midline_split <- drc_midline_split[names(drc_midline_split) != "Non_First Trimester"]
+
+models <- map(drc_midline_split, function(x) {
+  x <- select(x, -first_anc, -trimester, -consult_length_calc)
+  insuff_levels <- map(x, ~ length(unique(.))) |> keep(~ . < 2)
+  x <- select(x, -names(insuff_levels))
+  full_model <- lm(log_consult_length ~ (.), data = x)
+  scope_terms <- terms(log_consult_length ~ (.), data = x)
+
+  final <- step(
+    full_model,
+    direction = "backward", scope = scope_terms, trace = 1
+  )
+  list(initial = full_model, final = final)
+})
+
+coeffs <- map_dfr(
+  models, function(x) tidy(x$final, conf.int = TRUE),
+  .id = "datacut"
+)
+coeffs <- separate(
+  coeffs, datacut,
+  into = c("first_anc", "trimester"), sep = "_"
+)
+coeffs$significant <- coeffs$p.value < 0.05
+
+## Extract R2 and nobs
+r2_nobs <- map_dfr(models, function(x) {
+  data.frame(
+    r2 = summary(x$final)$r.squared,
+    nobs = nobs(x$final)
+  )
+}, .id = "datacut") |>
+  separate(datacut, into = c("first_anc", "trimester"), sep = "_")
+
+r2_nobs$nobs_label <- glue("n = {r2_nobs$nobs}")
+r2_nobs$r2_label <- glue("R² = {percent(r2_nobs$r2)}")
+r2_nobs$label <- glue("{r2_nobs$nobs_label}; {r2_nobs$r2_label}")
+
+delta_aic <- map_dfr(models, function(x) {
+  aic_initial <- AIC(x$initial)
+  aic_final <- AIC(x$final)
+  data.frame(delta_aic = aic_initial - aic_final)
+}, .id = "datacut") |>
+  separate(datacut, into = c("first_anc", "trimester"), sep = "_")
+
+delta_aic$delta_aic <- glue("Diff AIC = {round(delta_aic$delta_aic, 2)}")
+
+first_anc_labels <- c(
+  "Oui" = "First ANC: Yes",
+  "Non" = "First ANC: No"
+)
+
+coeffs$term <- factor(
+  coeffs$term,
+  levels = c("(Intercept)",
+             "provincekl Kwilu Province",
+             "provincemd Maindombe Province",             
+             "hcw_qualificationNurse",
+             "hcw_qualificationOther", 
+             "consultation_languageOther",
+             "time_elapsed_since_start_of_day"),
+      labels = c("(Intercept)",
+             "Kwilu Province",
+             "Maindombe Province",             
+             "Nurse",
+             "HCW Qualification: Other", 
+             "Consultation language: Other", 
+             "Hours elapsed since 6AM"),
+  ordered = TRUE
+)
+      
+p <- ggplot(coeffs[coeffs$term != "(Intercept)", ]) +
+  geom_point(aes(estimate, term, col = significant)) +
+  geom_errorbarh(
+    aes(y = term, xmin = conf.low, xmax = conf.high, col = significant)
+  ) +
+  geom_vline(xintercept = 0, linetype = "dashed", col = "grey") +
+  facet_grid(
+    first_anc ~ trimester,
+    labeller = labeller(.rows = c('Oui' = "First ANC: Yes", 'Non' = "First ANC: No"))
+  ) +
+  ##scale_y_reverse() +
+  theme_manuscript() +
+  theme(axis.text.y = element_text(size = 10), legend.title = element_text(size = 12)) +
+  labs(x = "Estimate", color = "Significant") 
+
+
+p1 <- p +
+  geom_text_npc(data = r2_nobs, aes(npcx = 0.1, npcy = 0.1, label = label)) +
+  geom_text_npc(
+    data = delta_aic, aes(npcx = 0.1, npcy = 0.15, label = delta_aic)
+  ) 
+
+ggsave_manuscript("drc_2018_stepwise", p1, width = 12, height = 8)
+
+
 ##############################################
 ### 1. LASSO model with cross-validated lambda
 ##############################################
