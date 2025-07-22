@@ -305,7 +305,8 @@ bfa_hf_workers$hcw_role <- case_when(
   bfa_hf_workers$f1_405 == 13 ~ "certified midwife (non-degree)",
   bfa_hf_workers$f1_405 == 14 ~ "chcw",
   bfa_hf_workers$f1_405 == 16 ~ "auxilliary midwife",
-  bfa_hf_workers$f1_405 == 19 ~ "pediatric nurse",
+  ## No pediatric nurse in the data dictionary, but it is in the questionnaire 
+  ##bfa_hf_workers$f1_405 == 19 ~ "pediatric nurse",
   TRUE ~ as.character(bfa_hf_workers$f1_405)
 )
 
@@ -318,11 +319,11 @@ hcw_count$doctor_or_nursing_and_midwifery <- rowSums(
     hcw_count$`state-certified nurse`,
     hcw_count$`state-certified midwife`,
     hcw_count$`certified midwife (non-degree)`,
-    hcw_count$`auxilliary midwife`,
-    hcw_count$`pediatric nurse`
+    hcw_count$`auxilliary midwife`
   ),
   na.rm = TRUE
 )
+
 hcw_count <- left_join(hcw_count, bfa_hf_survey, by = "SE")
 hcw_count$doctor_or_nursing_and_midwifery_per_10000 <- (
   hcw_count$doctor_or_nursing_and_midwifery / hcw_count$catchment_pop
@@ -352,6 +353,250 @@ orderly_artefact(
   files = "bfa_dco.rds",
   description = "DCO for Burkina Faso baseline and endline surveys"
 )
+
+
+## Processing for LM
+
+
+bfa_small <- select(
+  bfa_baseline_dco,
+  consult_length = consult_length_calc,
+  ## HF attributes
+  region_name,
+  num_csps_in_district = EFF,
+  num_personnel = PERSO,
+  milieu_of_residence = milieu_of_residence.x,
+  doctor_or_nursing_and_midwifery_per_10000,
+  facility_level_mapping = facility_level_mapping.x,
+  total_attendance,
+  attendance_pregnant_women,
+  num_maternal_deaths,
+  ## patient attributes
+  first_anc,
+  trimester,
+  pregnancy_week,
+  first_pregnancy,
+  ## HCW attributes
+  hcw_sex,
+  hcw_qualification,
+  ## Appointment attributes
+  consult_language,
+  time_elapsed_since_start_of_day
+)
+
+
+
+bfa_small <- filter(bfa_small, consult_length != 0)
+bfa_small$log_consult_length <- log(bfa_small$consult_length)
+bfa_small <- mutate_if(
+  bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
+)
+## Remove missing continuous variables
+bfa_small <- bfa_small[complete.cases(bfa_small), ]
+## Scale continuous variables
+cols_to_scale <- c(
+  "num_csps_in_district",
+  "doctor_or_nursing_and_midwifery_per_10000",
+  "total_attendance",
+  "attendance_pregnant_women",
+  "num_personnel"
+)
+bfa_small <- mutate(
+  bfa_small,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+bfa_small <- select(bfa_small, -all_of(cols_to_scale))
+bfa_split <- split(
+  bfa_small,
+  list(bfa_small$first_anc, bfa_small$trimester),
+  sep = "_"
+)
+
+saveRDS(bfa_split, "bfa_both_split.rds")
+orderly_artefact(
+  files = "bfa_both_split.rds",
+  description = "Data used for model fitting"
+)
+
+bfa_small <- select(
+  bfa_dco,
+  consult_length = consult_length_calc,
+  ## HF attributes
+  region_name,
+  num_csps_in_district,
+  num_personnel,
+  milieu_of_residence = milieu_of_residence.x,
+  doctor_or_nursing_and_midwifery_per_10000,
+  facility_level_mapping = facility_level_mapping.x,
+  total_attendance,
+  attendance_pregnant_women,
+  num_maternal_deaths,
+  ## patient attributes
+  first_anc,
+  trimester,
+  pregnancy_week,
+  first_pregnancy,
+  ## HCW attributes
+  hcw_sex,
+  hcw_qualification,
+  ## Appointment attributes
+  consult_language,
+  time_elapsed_since_start_of_day
+)
+
+
+bfa_small <- filter(bfa_small, consult_length != 0)
+bfa_small$log_consult_length <- log(bfa_small$consult_length)
+
+bfa_small <- mutate_if(
+  bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
+)
+## Remove missing continuous variables
+bfa_small <- bfa_small[complete.cases(bfa_small), ]
+## Scale continuous variables
+cols_to_scale <- c(
+  "num_csps_in_district",
+  "doctor_or_nursing_and_midwifery_per_10000",
+  "total_attendance",
+  "attendance_pregnant_women",
+  "num_personnel"
+)
+bfa_small <- mutate(
+  bfa_small,
+  across(
+   all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
+## Drop unscaled vars
+bfa_small <- select(bfa_small, -all_of(cols_to_scale))
+set.seed(42)
+
+bfa_split <- split(
+  bfa_small,
+  list(bfa_small$first_anc, bfa_small$trimester),
+  sep = "_"
+)
+
+
+saveRDS(bfa_split, "bfa_baseline_split.rds")
+orderly_artefact(
+  files = "bfa_baseline_split.rds",
+  description = "Data used for model fitting"
+)
+
+
+bfa_small <- select(
+  bfa_endline_dco,
+  consult_length = consult_length_calc,
+  ## HF attributes
+  region_name,
+  num_csps_in_district = EFF,
+  num_personnel = PERSO,
+  milieu_of_residence = milieu_of_residence.x,
+  doctor_or_nursing_and_midwifery_per_10000,
+  facility_level_mapping = facility_level_mapping.x,
+  total_attendance,
+  attendance_pregnant_women,
+  num_maternal_deaths,
+  ## patient attributes
+  patage_i,
+  patlit_i,
+  patmar_i,
+  first_anc,
+  trimester,
+  pregnancy_week,
+  first_pregnancy = patpar_f3_i,
+  ## HCW attributes
+  hcw_time_in_service = hwsen_i,
+  hcw_age = hwage_i,
+  hcw_sex = hwsex_i,
+  hcw_qualification,
+  ## Appointment attributes
+  consult_language,
+  time_elapsed_since_start_of_day
+)
+
+bfa_small$patlit_i <- factor(
+  bfa_small$patlit_i,
+  levels = c(0, 1),
+  labels = c("Illiterate", "Literate"),
+  ordered = FALSE
+)
+
+bfa_small$first_pregnancy <- factor(
+  bfa_small$first_pregnancy,
+  levels = c(0, 1),
+  labels = c("No", "Yes"),
+  ordered = FALSE
+)
+
+
+bfa_small$patmar_i <- factor(
+  bfa_small$patmar_i,
+  levels = c(0, 1),
+  labels = c("Not married", "Married"),
+  ordered = FALSE
+)
+
+bfa_small$hcw_sex <- factor(
+  bfa_small$hcw_sex,
+  levels = c(0, 1), labels = c("Female", "Male"),
+  ordered = FALSE
+)
+
+
+
+bfa_small <- filter(bfa_small, consult_length != 0)
+bfa_small$log_consult_length <- log(bfa_small$consult_length)
+
+bfa_small <- mutate_if(
+  bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
+)
+## Remove missing continuous variables
+bfa_small <- bfa_small[complete.cases(bfa_small), ]
+## Scale continuous variables
+cols_to_scale <- c(
+  "num_csps_in_district",
+  "doctor_or_nursing_and_midwifery_per_10000",
+  "total_attendance",
+  "attendance_pregnant_women",
+  "num_personnel"
+)
+bfa_small <- mutate(
+  bfa_small,
+  across(
+   all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
+## Drop unscaled vars
+bfa_small <- select(bfa_small, -all_of(cols_to_scale))
+set.seed(42)
+
+bfa_split <- split(
+  bfa_small,
+  list(bfa_small$first_anc, bfa_small$trimester),
+  sep = "_"
+)
+
+
+saveRDS(bfa_split, "bfa_endline_split.rds")
+orderly_artefact(
+  files = "bfa_endline_split.rds",
+  description = "Data used for model fitting"
+)
+
+
+
 
 
 ## orderly_resource("process_exit_survey.R")

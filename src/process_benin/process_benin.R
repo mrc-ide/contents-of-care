@@ -547,3 +547,94 @@ orderly_artefact(
   files = "benin_dco.rds",
   description = "Benin direct clinical observations survey"
 )
+
+
+benin_small <- select(
+  benin_dco, consult_length,
+  milieu_of_residence, health_zone,
+  facility_level_mapping,
+  facility_status_mapping,
+  pregnant_women_private_space, doctor_or_nursing_and_midwifery_per_10000,
+  fetoscope, number_of_births_2009, women_in_labour_pay,
+  hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
+  )
+
+benin_small$first_anc <- case_when(
+  benin_small$first_anc %in% "oui" ~ "First ANC",
+  benin_small$first_anc %in% "non" ~ "Follow-up ANC",
+  TRUE ~ benin_small$first_anc
+)
+
+
+benin_small$hcw_qualification <- case_when(
+  !benin_small$hcw_qualification %in%
+    c("Doctor", "Midwife", "Nurse") ~ "Other",
+  TRUE ~ benin_small$hcw_qualification
+)
+benin_dco$hcw_qualification <- factor(benin_dco$hcw_qualification)
+benin_dco$hcw_qualification <- relevel(
+  benin_dco$hcw_qualification, ref = "Doctor"
+)
+
+
+benin_small$log_consult_length <- log(benin_small$consult_length)
+## Drop consult_length to avoid it being included as a covariate
+benin_small <- select(benin_small, -consult_length)
+
+factor_vars <- c(
+  "milieu_of_residence", "health_zone", "facility_level_mapping",
+  "facility_status_mapping", "pregnant_women_private_space",
+  "fetoscope", "women_in_labour_pay",
+  "hcw_qualification", "first_anc", "trimester"
+)
+
+
+## Make NAs into "Unknown"
+benin_small <- mutate(
+  benin_small, across(all_of(factor_vars), function(x) {
+    x <- as.character(x)
+    x[is.na(x)] <- "Unknown"
+    x
+  }
+))
+
+
+set.seed(42)
+
+
+## Scale continuous variables before splitting
+cols_to_scale <- "doctor_or_nursing_and_midwifery_per_10000"
+ 
+benin_small <- mutate(
+  benin_small,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
+## Drop unscaled vars
+benin_small <- select(benin_small, -all_of(cols_to_scale))
+
+benin_split <- split(
+  benin_small, list(benin_dco$first_anc, benin_dco$trimester),
+  sep = "_"
+)
+
+benin_split <- map(benin_split, function(x) {
+  insuff_levels <- map_int(factor_vars, function(var) length(unique(x[[var]])))
+  insuff_levels <- factor_vars[which(insuff_levels == 1)]
+  ## Drop invariant variables
+  cli::cli_alert(
+    "Dropping {length(insuff_levels)} invariant variables: {insuff_levels}"
+  )
+  x <- x[, !names(x) %in% insuff_levels]
+  x
+})
+
+saveRDS(benin_split, "benin_split.rds")
+orderly_artefact(
+  files = "benin_split.rds",
+  description = "Data split by first ANC and trimester"
+)

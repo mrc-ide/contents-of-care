@@ -13,75 +13,18 @@ library(tibble)
 library(tidylog)
 library(tidyr)
 
+set.seed(42)
+
 orderly_shared_resource("utils.R")
 source("utils.R")
 
-orderly_dependency("process_burkina_faso", "latest", files = c("bfa_dco.rds"))
-bfa_dco <- readRDS("bfa_dco.rds")
-
-
-bfa_small <- select(
-  bfa_dco,
-  consult_length = consult_length_calc,
-  ## HF attributes
-  region_name,
-  num_csps_in_district = EFF,
-  num_personnel = PERSO,
-  milieu_of_residence = milieu_of_residence.x,
-  doctor_or_nursing_and_midwifery_per_10000,
-  facility_level_mapping = facility_level_mapping.x,
-  total_attendance,
-  attendance_pregnant_women,
-  num_maternal_deaths,
-  ## patient attributes
-  first_anc,
-  trimester,
-  pregnancy_week,
-  first_pregnancy,
-  ## HCW attributes
-  hcw_sex,
-  hcw_qualification,
-  ## Appointment attributes
-  consult_language,
-  time_elapsed_since_start_of_day
+orderly_dependency(
+  "process_burkina_faso", "latest",
+  files = c("bfa_both_split.rds")
 )
 
-
-
-bfa_small <- filter(bfa_small, consult_length != 0)
-bfa_small$log_consult_length <- log(bfa_small$consult_length)
-bfa_small <- mutate_if(
-  bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
-)
-## Remove missing continuous variables
-bfa_small <- bfa_small[complete.cases(bfa_small), ]
-## Scale continuous variables
-cols_to_scale <- c(
-  "num_csps_in_district",
-  "doctor_or_nursing_and_midwifery_per_10000",
-  "total_attendance",
-  "attendance_pregnant_women",
-  "num_personnel"
-)
-bfa_small <- mutate(
-  bfa_small,
-  across(
-    all_of(cols_to_scale),
-    ~ scale(.)[, 1],
-    .names = "{.col}_scaled"
-  )
-)
-bfa_small <- select(bfa_small, -all_of(cols_to_scale))
-
-set.seed(42)
-
-bfa_split <- split(
-  bfa_small,
-  list(bfa_small$first_anc, bfa_small$trimester),
-  sep = "_"
-)
-
-## Remove strata with less than 30 observations
+bfa_split <- readRDS("bfa_both_split.rds")
+## sanity check
 map(bfa_split, nrow)
 map(bfa_split, function(x) {
   map(x, ~ sum(is.na(.))) |> keep(~ . > 0)
@@ -121,9 +64,9 @@ r2_nobs <- map_dfr(models, function(x) {
 }, .id = "datacut") |>
   separate(datacut, into = c("first_anc", "trimester"), sep = "_")
 
-r2_nobs$nobs_label <- glue::glue("n = {r2_nobs$nobs}")
-r2_nobs$r2_label <- glue::glue("R² = {percent(r2_nobs$r2)}")
-r2_nobs$label <- glue::glue("{r2_nobs$nobs_label}; {r2_nobs$r2_label}")
+r2_nobs$nobs_label <- glue("n = {r2_nobs$nobs}")
+r2_nobs$r2_label <- glue("R² = {percent(r2_nobs$r2)}")
+r2_nobs$label <- glue("{r2_nobs$nobs_label}; {r2_nobs$r2_label}")
 
 delta_aic <- map_dfr(models, function(x) {
   aic_initial <- AIC(x$initial)
