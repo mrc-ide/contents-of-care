@@ -3,6 +3,7 @@ library(foreign)
 library(janitor)
 library(lubridate)
 library(orderly2)
+library(purrr)
 library(readr)
 library(tidylog)
 library(tidyr)
@@ -101,7 +102,7 @@ drc_baseline_dco$hcw_qualification <- case_when(
   drc_baseline_dco$hcw_qualification == 1 ~ "Doctor",
   drc_baseline_dco$hcw_qualification %in% c(2, 3, 4) ~ "Nurse",
   drc_baseline_dco$hcw_qualification == 5 ~ "Lab technician",
-  drc_baseline_dco$hcw_qualification == 6 ~ "Midwife/Obstetrician",
+  drc_baseline_dco$hcw_qualification == 6 ~ "Midwife",
   drc_baseline_dco$hcw_qualification == 97 ~ "Other",
   TRUE ~ NA_character_
 )
@@ -364,8 +365,8 @@ drc_baseline_hf$province <- case_when(
 )
 
 drc_baseline_hf$facility_type <- case_when(
-  drc_baseline_hf$f1_00_01 == 1 ~ "Hospital",
-  drc_baseline_hf$f1_00_01 == 2 ~ "Health center",
+  drc_baseline_hf$f1_00_01 == 1 ~ "Secondary",
+  drc_baseline_hf$f1_00_01 == 2 ~ "Primary",
   TRUE ~ as.character(drc_baseline_hf$f1_00_01)
 )
 
@@ -686,6 +687,129 @@ orderly_artefact(
   description = "DRC DCO 2015 augmented with health facility data"
 )
 
+drc_baseline_small <- select(
+  drc_baseline_dco_aug,
+  consult_length_calc,
+  province,
+  ## Facility characteristics
+  doctor_or_nursing_and_midwifery_per_10000,
+  facility_status_mapping,
+  facility_type,
+  milieu_of_residence,
+  total_attendance_last_month,
+  pregnant_women_last_month,
+  maternal_deaths_last_month,
+  patients_pay_for_consumables,
+  hf_has_fetoscope,
+  ## Patient characteristics
+  pregnancy_in_weeks, first_pregnancy, first_anc,
+  trimester,
+  ## HCW characteristics
+  hcw_sex, hcw_qualification,
+  ## Appointment characteristics
+  consultation_language,
+  time_elapsed_since_start_of_day
+)
+
+## drc_baseline_small$first_anc <- factor(
+##   drc_baseline_small$first_anc,
+##   levels = c("yes", "no"),
+##   labels = c("First ANC: Yes", "First ANC: No"),
+##   ordered = TRUE
+## )
+
+
+drc_baseline_small <- mutate_if(
+  drc_baseline_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
+)
+drc_baseline_small$log_consult_length <-
+  log(drc_baseline_small$consult_length_calc)
+
+drc_baseline_small <- select(drc_baseline_small, -consult_length_calc)
+
+drc_baseline_small$province <- case_when(
+  drc_baseline_small$province %in% "Katanga (comparison)" ~ "Katanga",
+  TRUE ~ drc_baseline_small$province
+)
+
+drc_baseline_small$hcw_qualification <- case_when(
+  drc_baseline_small$hcw_qualification %in% "Lab technician" ~ "Other",
+  TRUE ~ drc_baseline_small$hcw_qualification
+)
+
+
+cols_to_scale <- c(
+  "doctor_or_nursing_and_midwifery_per_10000",
+  "total_attendance_last_month",
+  "pregnant_women_last_month"
+)
+## Scale continuous variables before splitting
+drc_baseline_small <- mutate(
+  drc_baseline_small,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.x, center = TRUE, scale = TRUE),
+    .names = "{col}_scaled"
+  )
+)
+
+drc_baseline_small <- select(
+  drc_baseline_small, -all_of(cols_to_scale)
+)
+
+
+
+
+drc_baseline_split <- split(
+  drc_baseline_small,
+  list(drc_baseline_dco_aug$first_anc, drc_baseline_dco_aug$trimester),
+  sep = "_"
+)
+
+
+map(drc_baseline_split, nrow)
+map(drc_baseline_split, function(x) {
+  map(x, ~ sum(is.na(.))) |> keep(~ . > 0)
+})
+
+##drc_baseline_split <- keep(drc_baseline_split, function(x) nrow(x) >= 30)
+
+drc_baseline_split <- map(drc_baseline_split, na.omit)
+
+factor_vars <- c(
+  "province",
+  "facility_status",
+  "facility_type",
+  "milieu_of_residence",
+  "patients_pay_for_consumables",
+  "hf_has_fetoscope",
+  "first_pregnancy",
+  "first_anc",
+  "trimester",
+  "hcw_sex",
+  "hcw_qualification",
+  "consultation_language"
+)
+
+drc_baseline_split <- map(drc_baseline_split, function(x) {
+  insuff_levels <- map_int(factor_vars, function(var) length(unique(x[[var]])))
+  insuff_levels <- factor_vars[which(insuff_levels == 1)]
+  ## Drop invariant variables
+  
+  cli::cli_alert(
+    "Dropping {length(insuff_levels)} invariant variables: {insuff_levels}"
+  )
+  x <- x[, !names(x) %in% insuff_levels]
+  x
+})
+
+saveRDS(drc_baseline_split, "drc_baseline_split.rds")
+orderly_artefact(
+  files = "drc_baseline_split.rds",
+  description = "DRC data used for model fitting"
+)
   
 
 ## orderly_cleanup()
+
+

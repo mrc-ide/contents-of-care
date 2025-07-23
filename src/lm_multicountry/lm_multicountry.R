@@ -27,12 +27,6 @@ drc_split <- map(drc_split, function(x) {
   x$country <- "drc"
   ##x <- rename(x, geography = province)
 
-  x$facility_type <- ifelse(
-    x$facility_type %in% "Hospital", "Secondary", x$facility_type
-  )
-  x$facility_type <- ifelse(
-    x$facility_type %in% "Health center", "Primary", x$facility_type
-  )
   x$hcw_qualification <- ifelse(
     x$hcw_qualification %in% "Midwife/Obstetrician", "Midwife",
     x$hcw_qualification
@@ -69,6 +63,10 @@ benin_split <- map(benin_split, function(x) {
 bfa_split <- map(bfa_split, function(x) {
   x$country <- "burkina_faso"
   x <- rename(x, facility_type = facility_level_mapping)
+  x$hcw_qualification <- case_when(
+    x$hcw_qualification %in% "CHCW" ~ "Other",
+    TRUE ~ x$hcw_qualification
+  )
   x
 })
 
@@ -88,9 +86,19 @@ multicountry_split <- map(
       select(drc, all_of(common_cols)),
       select(bfa, all_of(common_cols))
     )
+    out$hcw_qualification <- factor(out$hcw_qualification)
+    out$hcw_qualification <- relevel(
+      out$hcw_qualification, ref = "Midwife"
+    )
+
+    out$facility_type <- factor(out$facility_type)
+    out$facility_type <- relevel(
+      out$facility_type, ref = "Primary"
+    )
+    
     out
   })
-
+names(multicountry_split) <- names(drc_split)
 
 fits <- map(multicountry_split, function(x) {
   brm(
