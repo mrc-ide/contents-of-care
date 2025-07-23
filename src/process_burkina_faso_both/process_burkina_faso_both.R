@@ -112,8 +112,8 @@ bfa_split <- split(
 )
 
 
-saveRDS(bfa_split, "bfa_baseline_split.rds")
+saveRDS(bfa_split, "bfa_both_split.rds")
 orderly_artefact(
-  files = "bfa_baseline_split.rds",
+  files = "bfa_both_split.rds",
   description = "Data used for model fitting"
 )

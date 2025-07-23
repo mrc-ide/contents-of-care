@@ -140,6 +140,12 @@ benin$m0_milieu <- case_when(
 )
 benin <- rename(benin, milieu_of_residence = m0_milieu)
 
+benin$first_anc <- case_when(
+  benin$first_anc %in% "oui" ~ "First ANC",
+  benin$first_anc %in% "non" ~ "Follow-up ANC",
+  TRUE ~ NA_character_
+)
+
 benin$trimester <- case_when(
   benin$trimester %in% "premier trimestre" ~ "First Trimester",
   benin$trimester %in% "deuxieme trimestre" ~ "Second Trimester",
