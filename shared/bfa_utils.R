@@ -193,9 +193,9 @@ recode_bfa_vars <- function(x) {
   )
 
   x$facility_level_mapping <- case_when(
-    x$facility_level_name %in% c("CSPS") ~ "Primary health care",
+    x$facility_level_name %in% c("CSPS") ~ "Primary",
     x$facility_level %in% c("Medical center", "District hospital") ~
-      "Secondary health care",
+      "Secondary",
     TRUE ~ "Other"
   )
 
