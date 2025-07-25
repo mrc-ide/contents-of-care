@@ -178,7 +178,7 @@ draft
 archive
 # ---^^^--- added by orderly ---^^^----------------
 .python-version
-shared
+shared/resources
 .Rhistory
 *.dta
 *.rds
