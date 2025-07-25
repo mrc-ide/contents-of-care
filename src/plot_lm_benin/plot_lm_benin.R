@@ -194,3 +194,21 @@ orderly_artefact(
   files = "benin_dco_bayes_coeffs_gt_0.rds",
   description = "Coefficients greater than 0 for DRC 2015 DCO model fits"
 )
+
+
+p <- ggplot(coeffs_gt_0) +
+  geom_tile(
+    aes(x = 0.5, y = rowname, width = 1, height = 0.25),
+    fill = "gray"
+  ) +
+  geom_tile(
+    aes(x = `Post.Prob` / 2, y = rowname, width = `Post.Prob`, height = 0.25),
+    fill = "red"
+  ) +
+  facet_grid(trimester ~ first_anc, scales = "free") +
+  xlim(0, 1) +
+  theme_manuscript() +
+  theme(
+    axis.title.y = element_blank(), axis.title.x = element_text(size = 12)
+  ) 
+    

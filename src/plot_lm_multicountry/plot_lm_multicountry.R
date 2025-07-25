@@ -37,7 +37,7 @@ orderly_artefact(
 x <- filter(fixed_effects, !rowname %in% "Intercept")
 
 breaks <- c(
-  "milieu_of_residenceUrban",  
+  "milieu_of_residenceUrban",
   "milieu_of_residenceUnknown",
   "facility_typeSecondary",
   "doctor_or_nursing_and_midwifery_per_10000_scaled",
@@ -48,6 +48,7 @@ breaks <- c(
   "hcw_qualificationOther",
   "time_elapsed_since_start_of_day"
 )
+
 
 x$rowname <- factor(x$rowname, levels = breaks, ordered = TRUE)
 
@@ -180,4 +181,27 @@ saveRDS(coeffs_gt_0, file = "multicountry_dco_bayes_coeffs_gt_0.rds")
 orderly_artefact(
   files = "multicountry_dco_bayes_coeffs_gt_0.rds",
   description = "Coefficients greater than 0"
+)
+
+
+
+p <- ggplot(coeffs_gt_0) +
+  geom_tile(
+    aes(x = 0.5, y = rowname, width = 1, height = 0.25),
+    fill = "gray"
+  ) +
+  geom_tile(
+    aes(x = `Post.Prob` / 2, y = rowname, width = `Post.Prob`, height = 0.25),
+    fill = "red"
+  ) +
+  facet_grid(trimester ~ first_anc, scales = "free") +
+  xlim(0, 1) +
+  theme_manuscript() +
+  theme(
+    axis.title.y = element_blank(), axis.title.x = element_text(size = 12)
+  ) 
+  
+
+ggsave_manuscript(
+  plot = p, filename = "multicountry_pd", width = 10, height = 8
 )

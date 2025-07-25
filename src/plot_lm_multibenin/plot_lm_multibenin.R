@@ -33,9 +33,14 @@ bfa <- orderly_dependency(
   "plot_lm_burkina_faso_both", "latest", files = "./"
 )
 
+multicountry <- orderly_dependency(
+  "plot_lm_multicountry", "latest", files = "./"
+)
+
 deps <- bind_rows(
   Benin = benin, DRC = drc, `BFA (baseline)` = bfa_baseline,
-  `BFA (endline)` = bfa_endline, BFA = bfa, .id = "country"
+  `BFA (endline)` = bfa_endline, BFA = bfa, Multicountry = multicountry,
+  .id = "country"
 )
 
 
@@ -46,6 +51,7 @@ fef_vars <- map_chr(fef_files, function(file) {
   assign(var_name, readRDS(file), envir = .GlobalEnv)
   var_name
 })
+
 
 
 x <- mget(fef_vars, envir = .GlobalEnv)
