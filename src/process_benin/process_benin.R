@@ -21,6 +21,12 @@ infile <- "benhrbf2_m.dta"
 orderly_shared_resource(benin.dta = paste0(indir, infile))
 benin <- read.dta("benin.dta")
 
+## For information on complications, combine the columns for individual
+## complications into a single column
+benin <- mutate(
+  benin,
+  m0_14 = if_else(if_any(m0_14_1a:m0_14_1t, ~ . %in% "1"), "oui", "non")
+)
 
 ## m0_03 to m3_6 describe the individual steps in the examnination
 ## Recode
@@ -46,26 +52,26 @@ benin <- rename(
   glucoserie = m0_12,
   us_requested = m0_13,
   info_complications = m0_14,
-  info_placenta_previa = m0_14_1a,
-  info_premature_rupture = m0_14_1b,
-  info_postpartum_hemorrhage = m0_14_1c,
-  info_retained_placenta = m0_14_1d,
-  info_uterus_inverted = m0_14_1e,
-  info_ectopic_pregnancy = m0_14_1f,
-  info_hemorrhage_antepartum = m0_14_1g,
-  info_prolonged_labor_latent = m0_14_1h,
-  info_prolonged_labor_second = m0_14_1i,
-  info_cpd = m0_14_1j,
-  info_uterine_rupture = m0_14_1k,
-  info_abnormal_presentation = m0_14_1l,
-  info_infection = m0_14_1m,
-  info_uterine_perforation = m0_14_1n,
-  info_hypertensive_crises = m0_14_1o,
-  info_ecclampsia = m0_14_1p,
-  info_pre_eclampsia = m0_14_1q,
-  info_severe_anemia = m0_14_1r,
-  info_multiple_pregnancy = m0_14_1s,
-  info_embolism = m0_14_1t,
+  ## info_placenta_previa = m0_14_1a,
+  ## info_premature_rupture = m0_14_1b,
+  ## info_postpartum_hemorrhage = m0_14_1c,
+  ## info_retained_placenta = m0_14_1d,
+  ## info_uterus_inverted = m0_14_1e,
+  ## info_ectopic_pregnancy = m0_14_1f,
+  ## info_hemorrhage_antepartum = m0_14_1g,
+  ## info_prolonged_labor_latent = m0_14_1h,
+  ## info_prolonged_labor_second = m0_14_1i,
+  ## info_cpd = m0_14_1j,
+  ## info_uterine_rupture = m0_14_1k,
+  ## info_abnormal_presentation = m0_14_1l,
+  ## info_infection = m0_14_1m,
+  ## info_uterine_perforation = m0_14_1n,
+  ## info_hypertensive_crises = m0_14_1o,
+  ## info_ecclampsia = m0_14_1p,
+  ## info_pre_eclampsia = m0_14_1q,
+  ## info_severe_anemia = m0_14_1r,
+  ## info_multiple_pregnancy = m0_14_1s,
+  ## info_embolism = m0_14_1t,
   ## Section 1 questions only for patients iin first trimester
   patients_age_reported = m1_1,
   patients_height_reported = m1_2,
@@ -107,7 +113,12 @@ benin <- rename(
   sp_prescribed3 = m3_5,
   sp_ensured3 = m3_6)
 
-
+## Only sp_ensured3 is coded as 1/2
+benin$sp_ensured3 <- case_when(
+  benin$sp_ensured3 %in% 1L ~ "oui",
+  benin$sp_ensured3 %in% 2L ~ "non",
+  TRUE ~ NA_character_
+)
 
 ## Answers to pregnancy_stage are at most 36 weeks, and more than 36 weeks
 benin <- relocate(benin, pregnancy_stage, .after = sp_ensured3)
@@ -550,6 +561,55 @@ benin_dco$pregnant_women_private_space <- case_when(
   TRUE ~ NA_character_
 )
 
+
+benin_dco$first_anc <- case_when(
+  benin_dco$first_anc %in% "oui" ~ "First ANC",
+  benin_dco$first_anc %in% "non" ~ "Follow-up ANC",
+  TRUE ~ benin_dco$first_anc
+)
+
+
+benin_dco$hcw_qualification <- case_when(
+  !benin_dco$hcw_qualification %in%
+    c("Doctor", "Midwife", "Nurse") ~ "Other",
+  TRUE ~ benin_dco$hcw_qualification
+)
+benin_dco$hcw_qualification <- factor(benin_dco$hcw_qualification)
+benin_dco$hcw_qualification <- relevel(
+  benin_dco$hcw_qualification,
+  ref = "Doctor"
+)
+
+
+factor_vars <- c(
+  "milieu_of_residence", "health_zone", "facility_level_mapping",
+  "facility_status_mapping", "pregnant_women_private_space",
+  "fetoscope", "women_in_labour_pay",
+  "hcw_qualification", "first_anc", "trimester"
+)
+
+
+## Make NAs into "Unknown"
+benin_dco <- mutate(
+  benin_dco, across(all_of(factor_vars), function(x) {
+    x <- as.character(x)
+    x[is.na(x)] <- "Unknown"
+    x
+  })
+)
+
+## Scale continuous variables before splitting
+cols_to_scale <- "doctor_or_nursing_and_midwifery_per_10000"
+
+benin_dco <- mutate(
+  benin_dco,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
 saveRDS(benin_dco, "benin_dco.rds")
 orderly_artefact(
   files = "benin_dco.rds",
@@ -562,68 +622,20 @@ benin_small <- select(
   milieu_of_residence, health_zone,
   facility_level_mapping,
   facility_status_mapping,
-  pregnant_women_private_space, doctor_or_nursing_and_midwifery_per_10000,
+  pregnant_women_private_space,
+  doctor_or_nursing_and_midwifery_per_10000_scaled,
   fetoscope, number_of_births_2009, women_in_labour_pay,
   hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
-  )
-
-benin_small$first_anc <- case_when(
-  benin_small$first_anc %in% "oui" ~ "First ANC",
-  benin_small$first_anc %in% "non" ~ "Follow-up ANC",
-  TRUE ~ benin_small$first_anc
-)
+ )
 
 
-benin_small$hcw_qualification <- case_when(
-  !benin_small$hcw_qualification %in%
-    c("Doctor", "Midwife", "Nurse") ~ "Other",
-  TRUE ~ benin_small$hcw_qualification
-)
-benin_dco$hcw_qualification <- factor(benin_dco$hcw_qualification)
-benin_dco$hcw_qualification <- relevel(
-  benin_dco$hcw_qualification, ref = "Doctor"
-)
 
 
 benin_small$log_consult_length <- log(benin_small$consult_length)
 ## Drop consult_length to avoid it being included as a covariate
 benin_small <- select(benin_small, -consult_length)
 
-factor_vars <- c(
-  "milieu_of_residence", "health_zone", "facility_level_mapping",
-  "facility_status_mapping", "pregnant_women_private_space",
-  "fetoscope", "women_in_labour_pay",
-  "hcw_qualification", "first_anc", "trimester"
-)
 
-
-## Make NAs into "Unknown"
-benin_small <- mutate(
-  benin_small, across(all_of(factor_vars), function(x) {
-    x <- as.character(x)
-    x[is.na(x)] <- "Unknown"
-    x
-  }
-))
-
-
-set.seed(42)
-
-
-## Scale continuous variables before splitting
-cols_to_scale <- "doctor_or_nursing_and_midwifery_per_10000"
- 
-benin_small <- mutate(
-  benin_small,
-  across(
-    all_of(cols_to_scale),
-    ~ scale(.)[, 1],
-    .names = "{.col}_scaled"
-  )
-)
-
-## Drop unscaled vars
-benin_small <- select(benin_small, -all_of(cols_to_scale))
 
 benin_split <- split(
   benin_small, list(benin_dco$first_anc, benin_dco$trimester),

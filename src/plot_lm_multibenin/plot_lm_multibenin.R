@@ -43,6 +43,9 @@ deps <- bind_rows(
   .id = "country"
 )
 
+fit_files <- grep("fits.rds", deps$files$here, value = TRUE)
+fits <- map(fit_files, readRDS)
+
 
 fef_files <- grep("fixed_effects.rds", deps$files$here, value = TRUE)
 
