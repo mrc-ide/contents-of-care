@@ -1,10 +1,13 @@
 library(brms)
 library(dplyr)
+library(glue)
 library(ggplot2)
 library(orderly2)
 library(performance)
 library(posterior)
 library(purrr)
+library(snakecase)
+library(tibble)
 library(tidyr)
 
 orderly_shared_resource(utils.R = "utils.R")
@@ -15,12 +18,12 @@ fits <- readRDS("drc_fits.rds")
 
 fixed_effects <- map_dfr(fits, function(fit) {
   x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
-  tibble::rownames_to_column(x)
+  rownames_to_column(x)
 }, .id = "datacut")
 
 fixed_effects <- separate(
   fixed_effects, datacut,
-  into = c("first_anc", "trimester"), sep = "_"
+  into = c("anc", "trimester"), sep = "_"
 )
 
 saveRDS(fixed_effects, file = "drc_dco_bayes_fixed_effects.rds")
@@ -123,33 +126,29 @@ p <- ggplot() +
     aes(y = rowname, xmin = `Q2.5`, xmax = `Q97.5`),
     height = 0
   ) +
-  facet_grid(
-    trimester ~ first_anc,
-    scales = "free",
-    ## labeller = labeller(.rows = label_both, .cols = label_value)
-  ) +
-  theme_manuscript() +
-  theme(axis.title.y = element_blank())
+  theme_manuscript() 
+
 
 p <- p + scale_y_discrete(breaks = breaks, labels = labels)
 
+p <- my_facets(p)
 
 ggsave_manuscript(
   p,
   file = "drc_dco_bayes_fixed_effects",
-  width = 8, height = 10
+  width = 12, height = 8
 )
 
 ## Random effects
 ran_effects <- map_dfr(fits, function(fit) {
   x <- ranef(fit, probs = c(0.025, 0.5, 0.975))
   x <- as.data.frame(x$province[, , "Intercept"])
-  tibble::rownames_to_column(x)
+  rownames_to_column(x)
 }, .id = "datacut")
 
 ran_effects <- separate(
   ran_effects, datacut,
-  into = c("first_anc", "trimester"), sep = "_"
+  into = c("anc", "trimester"), sep = "_"
 )
 
 
@@ -167,18 +166,14 @@ p <- ggplot() +
     aes(y = rowname, xmin = `Q2.5`, xmax = `Q97.5`),
     height = 0
   ) +
-  facet_grid(
-    trimester ~ first_anc,
-    scales = "free",
-    ## labeller = labeller(.rows = label_both, .cols = label_value)
-  ) +
-  theme_manuscript() +
-  theme(axis.title.y = element_blank())
+  theme_manuscript()
+
+p <- my_facets(p)
 
 ggsave_manuscript(
   p,
   file = "drc_dco_bayes_random_effects",
-  width = 8, height = 10
+  width = 12, height = 8
 )
 
 icc <- map(fits, compute_icc)
@@ -205,7 +200,7 @@ coeffs_gt_0 <- map_dfr(
 )
 coeffs_gt_0 <- separate(
   coeffs_gt_0, datacut,
-  into = c("first_anc", "trimester"), sep = "_"
+  into = c("anc", "trimester"), sep = "_"
 )
 
 saveRDS(coeffs_gt_0, file = "drc_dco_bayes_coeffs_gt_0.rds")
@@ -214,3 +209,32 @@ orderly_artefact(
   description = "Coefficients greater than 0 for DRC 2015 DCO model fits"
 )
 
+
+coeffs_gt_0 <- filter(coeffs_gt_0, !rowname %in% "Intercept")
+coeffs_gt_0$rowname <- factor(
+  coeffs_gt_0$rowname,
+  levels = breaks, ordered = TRUE
+)
+
+p <- ggplot(coeffs_gt_0) +
+  geom_tile(
+    aes(x = 0.5, y = rowname, width = 1, height = 0.25),
+    fill = "gray"
+  ) +
+  geom_tile(
+    aes(x = `Post.Prob` / 2, y = rowname, width = `Post.Prob`, height = 0.25),
+    fill = "red"
+  ) +
+  geom_vline(xintercept = 0.5, linetype = "dashed", alpha = 0.5) +
+  scale_y_discrete(breaks = breaks, labels = labels) +
+  xlim(0, 1) +
+  xlab("Posterior probability of coefficient > 0") +
+  theme_manuscript() +
+  theme(axis.title.x = element_text(size = 12))
+
+p <- my_facets(p)
+
+ggsave_manuscript(
+  "drc_dco_bayes_coeffs_gt_0",
+  plot = p, width = 12, height = 8
+)

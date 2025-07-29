@@ -1,6 +1,8 @@
 library(brms)
+library(cli)
 library(dplyr)
 library(ggplot2)
+library(ggpmisc)
 library(glue)
 library(orderly2)
 library(performance)
@@ -11,17 +13,6 @@ library(stringr)
 library(tibble)
 library(tidyr)
 
-my_facets <- function(p) {
-
-  p +
-    facet_grid(
-      trimester ~ anc,
-      scales = "free",
-      labeller = labeller(
-        trimester = to_title_case, anc = to_title_case
-      )) 
-
-}
 
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
@@ -54,7 +45,6 @@ orderly_artefact(
 
 x <- filter(fixed_effects, !rowname %in% "Intercept")
 
- 
 breaks <- c(
   "consult_length",
   "milieu_of_residenceUrban",
@@ -134,36 +124,23 @@ orderly_artefact(
   description = "Random effects for DRC 2015 DCO model fits"
 )
 
-p <- ggplot() +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  geom_point(data = ran_effects, aes(y = rowname, x = Q50)) +
-  geom_errorbarh(
-    data = ran_effects,
-    aes(y = rowname, xmin = `Q2.5`, xmax = `Q97.5`),
-    height = 0
-  ) +
-  facet_grid(
-    intervention ~ trimester + anc,
-    scales = "free",
-    ## labeller = labeller(.rows = label_both, .cols = label_value)
-  ) +
-  theme_manuscript() +
-  theme(axis.title.y = element_blank())
+walk(intv_names, function(intv) {
+  y <- filter(ran_effects, intervention %in% intv)
+  p <- ggplot(y) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    geom_point(aes(y = rowname, x = Q50)) +
+    geom_errorbarh(
+      aes(y = rowname, xmin = `Q2.5`, xmax = `Q97.5`),
+      height = 0
+    ) +
+    theme_manuscript() +
+    theme(axis.title.y = element_blank())
 
-ggsave_manuscript(
-  p,
-  file = "benin_dco_bayes_random_effects",
-  width = 8, height = 10
-)
+  p <- my_facets(p)
+  cli_inform("Saving {intv}")
+  ggsave_manuscript(glue("{intv}_random_effects"), p, width = 12, height = 8)
+})
 
-icc <- map(fits, compute_icc, group = "health_zone")
-
-saveRDS(icc, file = "benin_dco_bayes_icc.rds")
-
-orderly_artefact(
-  files = "benin_dco_bayes_icc.rds",
-  description = "ICC for DRC 2015 DCO model fits"
-)
 
 
 bayes_r2 <- map(fits, bayes_R2, probs = c(0.025, 0.5, 0.975))
@@ -206,7 +183,6 @@ walk(intv_names, function(intv) {
       fill = "red"
     ) +
     geom_vline(xintercept = 0.5, linetype = "dashed", alpha = 0.5) +
-    facet_grid(trimester ~ anc, scales = "free") +
     scale_y_discrete(breaks = breaks, labels = labels) +
     xlim(0, 1) +
     xlab("Probability(coefficient > 0)") +
@@ -214,6 +190,9 @@ walk(intv_names, function(intv) {
     theme(
       axis.title.y = element_blank(), axis.title.x = element_text(size = 12)
     )
+
+  p <- my_facets(p)
+  
   cli_inform("Saving {intv}")
   ggsave_manuscript(glue("{intv}"), p, width = 12, height = 8)
 })

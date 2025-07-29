@@ -43,32 +43,17 @@ deps <- bind_rows(
   .id = "country"
 )
 
-fit_files <- grep("fits.rds", deps$files$here, value = TRUE)
-fits <- map(fit_files, readRDS)
+## fit_files <- grep("fits.rds", deps$files$here, value = TRUE)
+## fits <- map(fit_files, readRDS)
 
 
 fef_files <- grep("fixed_effects.rds", deps$files$here, value = TRUE)
-
-fef_vars <- map_chr(fef_files, function(file) {
-  var_name <- gsub(".rds", "", file)
-  assign(var_name, readRDS(file), envir = .GlobalEnv)
-  var_name
-})
-
-
-
-x <- mget(fef_vars, envir = .GlobalEnv)
-
-fixed_effects_coeffs <- map(x, function(df) {
-  df$rowname <- str_replace_all(df$rowname, "_scaled", "")
-  df$first_anc <- case_when(
-    df$first_anc %in% "oui" ~ "First ANC",
-    df$first_anc %in% "non" ~ "Follow-up ANC",
-    TRUE ~ df$first_anc
-  )
-  df
-}
-)
+names(fef_files) <- deps$country[grepl("fixed_effects.rds", deps$files$here)]
+fixed_effects_coeffs <- map(fef_files, readRDS) |>
+  map(function(x) {
+    x$rowname <- str_replace_all(x$rowname, "_scaled", "")
+    x
+  })
 
 
 common_cols <- Reduce(
@@ -82,6 +67,7 @@ coeffs <- map_dfr(
 
 
 walk(common_cols, function(col) {
+
   xintercept <- filter(coeffs, rowname %in% col)
 
   p <- ggplot(xintercept) +
@@ -91,33 +77,26 @@ walk(common_cols, function(col) {
       height = 0
     ) +
     geom_vline(xintercept = 0, linetype = "dashed") +
-    facet_grid(
-      trimester ~ first_anc,
-      scales = "free"
-    ) +
     theme_manuscript() +
     theme(
       axis.title.y = element_blank(), axis.title.x = element_text(size = 12)
     ) +
     labs(x = to_title_case(xintercept$rowname[1]))
 
+  p <- my_facets(p)
+  
   ggsave_manuscript(
-    plot = p, filename = col, width = 10, height = 8
+    plot = p, filename = col, width = 12, height = 8
   )
 })
 
 
-idx <- grepl("gt_0", deps$files$here)
+idx <- grepl("gt_0.rds", deps$files$here)
 pd_files <- deps$files$here[idx]
 names(pd_files) <- deps$country[idx]
 
 pd <- map_dfr(pd_files, readRDS, .id = "country")
 pd$rowname <- str_replace_all(pd$rowname, "_scaled", "")
-pd$first_anc <- case_when(
-  pd$first_anc %in% "oui" ~ "First ANC",
-  pd$first_anc %in% "non" ~ "Follow-up ANC",
-  TRUE ~ pd$first_anc
-)
 
 walk(common_cols, function(col) {
 
@@ -131,7 +110,7 @@ walk(common_cols, function(col) {
       aes(x = `Post.Prob` / 2, y = country, width = `Post.Prob`, height = 0.25),
       fill = "red"
     ) +
-    facet_grid(trimester ~ first_anc, scales = "free") +
+    facet_grid(trimester ~ anc, scales = "free") +
     xlim(0, 1) + 
     theme_manuscript() +
     theme(
@@ -139,6 +118,6 @@ walk(common_cols, function(col) {
     ) + labs(x = to_title_case(xintercept$rowname[1]))
 
   ggsave_manuscript(
-    plot = p, filename = glue("{col}_pd"), width = 10, height = 8
+    plot = p, filename = glue("{col}_pd"), width = 12, height = 8
   )
 })

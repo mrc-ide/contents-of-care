@@ -5,6 +5,7 @@ library(orderly2)
 library(performance)
 library(posterior)
 library(purrr)
+library(snakecase)
 library(tibble)
 library(tidyr)
 
@@ -16,13 +17,23 @@ fits <- readRDS("benin_dco_fits.rds")
 
 fixed_effects <- map_dfr(fits, function(fit) {
   x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
-  rownames_to_column(x)
+  x <- rownames_to_column(x)
+  x$label <- paste("N =", nrow(fit$data))
+  x
 }, .id = "datacut")
 
 fixed_effects <- separate(
   fixed_effects, datacut,
-  into = c("first_anc", "trimester"), sep = "_"
+  into = c("anc", "trimester"), sep = "_"
 )
+
+fixed_effects$anc <- factor(
+  fixed_effects$anc,
+  levels = c("oui", "non"),
+  labels = c("First ANC", "Follow-up ANC"),
+  ordered = TRUE
+)
+
 
 saveRDS(fixed_effects, file = "benin_dco_bayes_fixed_effects.rds")
 orderly_artefact(
@@ -32,12 +43,6 @@ orderly_artefact(
 
 x <- filter(fixed_effects, !rowname %in% "Intercept")
 
-x$first_anc <- factor(
-  x$first_anc,
-  levels = c("oui", "non"),
-  labels = c("First ANC", "Follow-up ANC"),
-  ordered = TRUE
-)
 
 breaks <- c(
   "health_zoneBanikoara",
@@ -89,29 +94,23 @@ labels <- c(
   "Hours since 6AM"
 )
 
-p <- ggplot() +
+p <- ggplot(x) +
   geom_vline(xintercept = 0, linetype = "dashed") +
-  geom_point(data = x, aes(y = rowname, x = Q50)) +
-  geom_errorbarh(
-    data = x,
+  geom_point(aes(y = rowname, x = Q50)) +
+  geom_errorbarh(  
     aes(y = rowname, xmin = `Q2.5`, xmax = `Q97.5`),
     height = 0
   ) +
-  facet_grid(
-    trimester ~ first_anc,
-    scales = "free",
-    ## labeller = labeller(.rows = label_both, .cols = label_value)
-  ) +
-  theme_manuscript() +
-  theme(axis.title.y = element_blank())
-
+  theme_manuscript() 
+  
+p <- my_facets(p)
 p <- p + scale_y_discrete(breaks = breaks, labels = labels)
 
 
 ggsave_manuscript(
   p,
   file = "benin_dco_bayes_fixed_effects",
-  width = 8, height = 10
+  width = 12, height = 8
 )
 
 ## Random effects
@@ -123,11 +122,11 @@ ran_effects <- map_dfr(fits, function(fit) {
 
 ran_effects <- separate(
   ran_effects, datacut,
-  into = c("first_anc", "trimester"), sep = "_"
+  into = c("anc", "trimester"), sep = "_"
 )
 
-ran_effects$first_anc <- factor(
-  ran_effects$first_anc,
+ran_effects$anc <- factor(
+  ran_effects$anc,
   levels = c("oui", "non"),
   labels = c("First ANC", "Follow-up ANC"),
   ordered = TRUE
@@ -147,18 +146,14 @@ p <- ggplot() +
     aes(y = rowname, xmin = `Q2.5`, xmax = `Q97.5`),
     height = 0
   ) +
-  facet_grid(
-    trimester ~ first_anc,
-    scales = "free",
-    ## labeller = labeller(.rows = label_both, .cols = label_value)
-  ) +
-  theme_manuscript() +
-  theme(axis.title.y = element_blank())
+  theme_manuscript()
+
+p <- my_facets(p)
 
 ggsave_manuscript(
   p,
   file = "benin_dco_bayes_random_effects",
-  width = 8, height = 10
+  width = 12, height = 8
 )
 
 icc <- map(fits, compute_icc, group = "health_zone")
@@ -186,8 +181,16 @@ coeffs_gt_0 <- map_dfr(
 )
 coeffs_gt_0 <- separate(
   coeffs_gt_0, datacut,
-  into = c("first_anc", "trimester"), sep = "_"
+  into = c("anc", "trimester"), sep = "_"
 )
+
+coeffs_gt_0$anc <- factor(
+  coeffs_gt_0$anc,
+  levels = c("oui", "non"),
+  labels = c("First ANC", "Follow-up ANC"),
+  ordered = TRUE
+)
+
 
 saveRDS(coeffs_gt_0, file = "benin_dco_bayes_coeffs_gt_0.rds")
 orderly_artefact(
@@ -195,6 +198,12 @@ orderly_artefact(
   description = "Coefficients greater than 0 for DRC 2015 DCO model fits"
 )
 
+
+coeffs_gt_0 <- filter(coeffs_gt_0, !rowname %in% "Intercept")
+coeffs_gt_0$rowname <- factor(
+  coeffs_gt_0$rowname,
+  levels = breaks, ordered = TRUE
+)
 
 p <- ggplot(coeffs_gt_0) +
   geom_tile(
@@ -205,10 +214,22 @@ p <- ggplot(coeffs_gt_0) +
     aes(x = `Post.Prob` / 2, y = rowname, width = `Post.Prob`, height = 0.25),
     fill = "red"
   ) +
-  facet_grid(trimester ~ first_anc, scales = "free") +
+  geom_vline(xintercept = 0.5, linetype = "dashed", alpha = 0.5) +
+  scale_y_discrete(breaks = breaks, labels = labels) +
   xlim(0, 1) +
+  xlab("Posterior probability of coefficient > 0") +
   theme_manuscript() +
-  theme(
-    axis.title.y = element_blank(), axis.title.x = element_text(size = 12)
-  ) 
+  theme(axis.title.x = element_text(size = 12))
+
+p <- my_facets(p)
+
+ggsave_manuscript(
+  "benin_dco_bayes_coeffs_gt_0",
+  plot = p, width = 12, height = 8
+)
+
+orderly_artefact(
+  files = "benin_dco_bayes_coeffs_gt_0.png",
+  description = "Coefficients greater than 0 for Benin model fits"
+)
     
