@@ -35,7 +35,7 @@ bfa_endline_dco <- rename(
   milieu_of_residence = milieu,
   num_prev_anc_visits = f3_102,
   pregnancy_week = f3_103,
-  first_pregnancy = patpar_f3_i,
+  first_pregnancy = patpar_f3,
   hcw_sex = hwsex_i,
   hcw_age = hwage_i,
   hcw_time_in_service = hwsen_i,
@@ -152,12 +152,6 @@ bfa_small$patlit_i <- factor(
   ordered = FALSE
 )
 
-bfa_small$first_pregnancy <- factor(
-  bfa_small$first_pregnancy,
-  levels = c(0, 1),
-  labels = c("No", "Yes"),
-  ordered = FALSE
-)
 
 
 bfa_small$patmar_i <- factor(
@@ -167,11 +161,6 @@ bfa_small$patmar_i <- factor(
   ordered = FALSE
 )
 
-bfa_small$hcw_sex <- factor(
-  bfa_small$hcw_sex,
-  levels = c(0, 1), labels = c("Female", "Male"),
-  ordered = FALSE
-)
 
 
 
@@ -181,8 +170,6 @@ bfa_small$log_consult_length <- log(bfa_small$consult_length)
 bfa_small <- mutate_if(
   bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
 )
-## Remove missing continuous variables
-bfa_small <- bfa_small[complete.cases(bfa_small), ]
 ## Scale continuous variables
 cols_to_scale <- c(
   "doctor_or_nursing_and_midwifery_per_10000",
@@ -200,6 +187,9 @@ bfa_small <- mutate(
     .names = "{.col}_scaled"
   )
 )
+
+## Remove missing continuous variables
+bfa_small <- bfa_small[complete.cases(bfa_small), ]
 
 ## Drop unscaled vars
 bfa_small <- select(bfa_small, -all_of(cols_to_scale))

@@ -23,6 +23,7 @@ fits <- map(bfa_split, function(x) {
     prior = prior_spec,
     control = list(adapt_delta = 0.99)
   )
+  
 })
 
 saveRDS(fits, file = "bfa_both_dco_fits.rds")

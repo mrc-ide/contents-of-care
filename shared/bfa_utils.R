@@ -216,8 +216,8 @@ recode_bfa_vars <- function(x) {
 
   x$hcw_sex <- case_when(
     x$hcw_sex %in% 1 ~ "Male",
-    x$hcw_sex %in% 2 ~ "Female",
-    TRUE ~ NA_character_
+    x$hcw_sex %in% c(0, 2) ~ "Female",
+    TRUE ~ as.character(x$hcw_sex)
   )
 
   x$trimester <- case_when(
@@ -245,8 +245,8 @@ recode_bfa_vars <- function(x) {
 
   x$first_pregnancy <- case_when(
     x$first_pregnancy %in% 1 ~ "Yes",
-    x$first_pregnancy %in% 2 ~ "No",
-    TRUE ~ NA_character_
+    x$first_pregnancy %in% c(0, 2) ~ "No",
+    TRUE ~ as.character(x$first_pregnancy)
   )
 
   x

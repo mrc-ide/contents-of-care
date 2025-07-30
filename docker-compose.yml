@@ -1,3 +1,5 @@
+name: coc
+
 services:
   brms:
     image: brms-stan  # or use jrnold/docker-stan if you didn’t build your own

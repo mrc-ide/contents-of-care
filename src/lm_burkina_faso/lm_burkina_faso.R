@@ -19,7 +19,7 @@ orderly_shared_resource("utils.R")
 source("utils.R")
 
 orderly_dependency(
-  "process_burkina_faso", "latest",
+  "process_burkina_faso_both", "latest",
   files = c("bfa_both_split.rds")
 )
 
