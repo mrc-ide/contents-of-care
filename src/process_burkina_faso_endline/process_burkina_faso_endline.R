@@ -26,8 +26,6 @@ orderly_shared_resource(bfa_endline_dco.csv = paste(indir, infile, sep = "/"))
 
 bfa_endline_dco <- read_csv("bfa_endline_dco.csv")
 
-
-
 bfa_endline_dco <- rename(
   bfa_endline_dco,
   SE = se,

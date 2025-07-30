@@ -1,3 +1,14 @@
+my_facets <- function(p) {
+  p +
+    facet_grid(
+      trimester ~ anc,
+      scales = "free",
+      labeller = labeller(
+        trimester = to_title_case, anc = to_title_case
+      )
+    )
+}
+
 recode_oui_non <- function(x) {
   x <- tolower(x)
   x <- ifelse(x %in% "oui", 1, ifelse(x %in% "non", 0, NA))

@@ -43,8 +43,29 @@ deps <- bind_rows(
   .id = "country"
 )
 
-## fit_files <- grep("fits.rds", deps$files$here, value = TRUE)
-## fits <- map(fit_files, readRDS)
+fit_files <- grep("fits.rds", deps$files$here, value = TRUE)
+fits <- map(fit_files, readRDS)
+x <- str_replace_all(names(fits[[1]]), "oui", "First ANC")
+x <- str_replace_all(x, "non", "Follow-up ANC")
+names(fits[[1]]) <- x
+
+names(fits) <- deps$country[grepl("fits.rds", deps$files$here)]
+
+raw_data <- map_dfr(fits, function(fit) {
+  out <- map_dfr(fit, function(x) x$data, .id = "datacut")
+  out <- separate(
+    out, "datacut",
+    into = c("anc", "trimester"), sep = "_"
+  )
+  out
+}, .id = "country")
+
+raw_data$anc <- str_replace_all(raw_data$anc, "oui", "First ANC")
+raw_data$anc <- str_replace_all(raw_data$anc, "non", "Follow-up ANC")
+
+p <- ggplot(raw_data) +
+  stat_ecdf(aes(x = exp(log_consult_length), color = country)) +
+  theme_manuscript() 
 
 
 fef_files <- grep("fixed_effects.rds", deps$files$here, value = TRUE)

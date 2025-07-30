@@ -46,7 +46,7 @@ fix_bfa_data_errors <- function(x) {
   ## Fix obvious data entry errors
   ## Not sure what this is meant to be; end time is 1100
   idx <- x$consult_start %in% 3
-  cli_warn("Consult start time is 3 for {length(idx)} enteries, setting to NA")
+  cli_warn("Consult start time is 3 for {sum(idx)} enteries, setting to NA")
   x$consult_start[idx] <- NA
 
   ## end time is 1143; so 1105?
@@ -163,7 +163,8 @@ fix_bfa_data_errors <- function(x) {
   x$consult_start[idx] <- NA
   x$consult_end[idx] <- NA
 
-  idx <- x$consult_start %in% 813 & x$consult_end %in% 1758
+  idx <- x$consult_end %in% 813 & x$consult_start %in% 1758
+  cli_warn("Consult start time is 813 for {sum(idx)} enteries, setting to NA")
   x$consult_start[idx] <- NA
   x$consult_end[idx] <- NA
 
