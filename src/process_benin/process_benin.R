@@ -192,9 +192,10 @@ facility_survey_cl <- mutate(
   facility_survey_cl,
   across(
     everything(),
-    ~ ifelse(. %in% c(888, 999, 88888, 88888888, 99999999, 88889999), NA, .)
+    ~ ifelse(. %in% c(888, 999, 99999, 71210, 888888, 88888, 88888888, 99999999, 88889999), NA, .)
   )
 )
+## 71210 because that's almost 195 births per day in a facility with 5 beds.
 
 facility_survey_cl <- rename(
   facility_survey_cl,
@@ -205,15 +206,16 @@ facility_survey_cl <- rename(
   total_attendance_2009 = f1_5,
   new_patients_2009 = f1_6,
   new_female_patients_2009 = f1_7,
-  new_pregrant_patients_2009 = f1_8,
+  new_pregnant_patients_2009 = f1_8,
   new_patients_under_5_2009 = f1_9,
   vaccinations_provided = f2_1,
   vaccinations_room = f2_2,
   vaccinations_children_regulary = f2_3,
   vaccinations_workplan_2009 = f2_4,
-  ## Go to reproductive health section now
+  ## Section 3 is maternal health management
   anc_offered = f3_1,
   anc_visits_2009 = f3_2,
+  ## How many women had their first prenatal visit before the end of the first trimester?
   number_first_anc_before_first_trimester = f3_3,
   number_at_least_4_anc = f3_4,
   ## Procedures offered at every visit
@@ -301,50 +303,6 @@ facility_survey_cl <- rename(
   women_in_labour_pay = f3_51
 )
 
-
-cols_to_bin <- c(
-  "catchment_pop", "catchment_pop_female_15_49", "catchment_pop_under_1",
-  "catchment_pop_under_5"
-)
-
-bins <- unique(
-  c(
-    seq(0, 1000, by = 500), seq(1000, 15000, by = 5000),
-    seq(15000, 50000, by = 10000),
-    Inf
-  )
-)
-
-facility_survey_cl <- mutate(
-  facility_survey_cl,
-  across(
-    all_of(cols_to_bin),
-    list(binned = ~ cut(., breaks = bins, dig.lab = 5, ordered_result = TRUE)),
-    .names = "{.col}_binned"
-  )
-)
-
-
-cols_to_bin <- c(
-  "total_attendance_2009", "new_patients_2009",
-  "new_female_patients_2009", "new_pregrant_patients_2009",
-  "new_patients_under_5_2009", "anc_visits_2009"
-)
-
-bins <- unique(
-  c(
-    seq(0, 1000, by = 100), seq(1000, 10000, by = 2000), Inf
-  )
-)
-
-facility_survey_cl <- mutate(
-  facility_survey_cl,
-  across(
-    all_of(cols_to_bin),
-    list(binned = ~ cut(., breaks = bins, dig.lab = 5, ordered_result = TRUE)),
-    .names = "{.col}_binned"
-  )
-)
 
 
 saveRDS(facility_survey_cl, "benin_facility_survey_clinical.rds")
@@ -498,7 +456,7 @@ x$doctor_or_nursing_and_midwifery <- rowSums(
 
 x$nursing_and_midwifery <- rowSums(cbind(x$nurse, x$midwife), na.rm = TRUE)
 
-y <- select(facility_survey_cl, f_id1, catchment_pop, catchment_pop_binned)
+y <- select(facility_survey_cl, f_id1, catchment_pop)
 ## 11 rows where catchment_pop is missing, and one where it is 0
 ## We will exclude these rows
 y <- filter(y, !is.na(catchment_pop) & catchment_pop > 0)
@@ -574,6 +532,7 @@ benin_dco$hcw_qualification <- case_when(
     c("Doctor", "Midwife", "Nurse") ~ "Other",
   TRUE ~ benin_dco$hcw_qualification
 )
+
 benin_dco$hcw_qualification <- factor(benin_dco$hcw_qualification)
 benin_dco$hcw_qualification <- relevel(
   benin_dco$hcw_qualification,
@@ -599,7 +558,16 @@ benin_dco <- mutate(
 )
 
 ## Scale continuous variables before splitting
-cols_to_scale <- "doctor_or_nursing_and_midwifery_per_10000"
+cols_to_scale <- c(
+  "doctor_or_nursing_and_midwifery_per_10000",
+  "total_attendance_2009",
+  ##"new_patients_2009", <- Exclude because lots of NAs
+  "anc_visits_2009"
+  ## Exclude number_of_women_referred_to_hf because of 170 NAs
+  ##"number_of_women_referred_to_hf",
+)
+
+scaled_col_names <- paste0(cols_to_scale, "_scaled")
 
 benin_dco <- mutate(
   benin_dco,
@@ -623,10 +591,11 @@ benin_small <- select(
   facility_level_mapping,
   facility_status_mapping,
   pregnant_women_private_space,
-  doctor_or_nursing_and_midwifery_per_10000_scaled,
-  fetoscope, number_of_births_2009, women_in_labour_pay,
+  fetoscope, women_in_labour_pay,
   hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
- )
+  number_of_births_2009, number_of_beds_for_delivery,
+  all_of(scaled_col_names),
+)
 
 
 
@@ -652,6 +621,8 @@ benin_split <- map(benin_split, function(x) {
   x <- x[, !names(x) %in% insuff_levels]
   x
 })
+
+benin_split <- map(benin_split, function(x) na.omit(x))
 
 saveRDS(benin_split, "benin_split.rds")
 orderly_artefact(

@@ -13,3 +13,8 @@ services:
       - RENV_PATHS_CACHE=/renv-cache
     working_dir: /home/r
     tty: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"

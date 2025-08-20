@@ -35,8 +35,22 @@ format:
 - Direct clinical observations (DCO) of ANC
 - Patient exit survey
 
+## Benin
 
-## Preliminary results: Benin
+- Predominantly urban (74.8%)
+- 
+
+## Benin: facility 'busy-ness'
+
+- Facility catchment population
+- Total attendance in 2009 (stratified by age-groups)
+- New patients in 2009 (total/female/pregnant/under-5s)
+- ANC visits in 2009
+- Number of births in 2009
+- Number of pregnant women referred to the facility in 2009
+- Number of beds for delivery
+
+## Benin
 
 ![](benin_consult_length_by_overall.png)
 

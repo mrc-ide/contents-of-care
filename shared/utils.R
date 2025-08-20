@@ -197,10 +197,40 @@ intervention_types <- list(
       "fansidar_prescribed",
       "sp_given3", "sp_prescribed3", "sp_ensured3"),
   ## Alternatively - completeness of records
-  `Continuity of care` =
+  `
+Continuity of care` =
     c("patients_age_reported", "patients_height_reported",
       "previous_pregnancy_enquired",
       "number_of_previous_pregnancies_enquired", "blood_type_enquired",
       "blood_type_proof_enquired", "blood_type_test_requested",
       "vaccination_record_checked")
 )
+
+
+ks_distance_matrix <- function(data_split, response_var) {
+  n <- length(data_split)
+  group_names <- names(data_split)
+  D <- data.frame(
+    statistic = numeric(0), p.value = numeric(0), method = character(0),
+    stratum1 = character(0), stratum2 = character(0)
+  )
+  # Compute pairwise KS distances
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      print(glue("Comparing {group_names[i]} and {group_names[j]}"))
+      x1 <- data_split[[i]][[response_var]]
+      x2 <- data_split[[j]][[response_var]]
+      tmp <- tidy(ks.test(x1, x2))
+      tmp$stratum1 <- group_names[i]
+      tmp$stratum2 <- group_names[j]
+      D <- bind_rows(D, tmp)
+
+      ## Distance is symmetric, so we can add the reverse comparison
+      tmp$stratum1 <- group_names[j]
+      tmp$stratum2 <- group_names[i]
+      D <- bind_rows(D, tmp)
+      
+    }
+  }
+  D
+}

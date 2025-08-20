@@ -18,7 +18,7 @@ fits <- map(bfa_split, function(x) {
     family = gaussian(),
     drop_unused_levels = TRUE,
     chains = 4,
-    cores = 4,
+    cores = 1,
     iter = 4000,
     prior = prior_spec,
     control = list(adapt_delta = 0.99)

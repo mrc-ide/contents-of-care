@@ -1,9 +1,5 @@
 library(brms)
 
-prior_spec <- c(
-  prior(normal(0, 1), class = b), # fixed effects
-  prior(normal(0, 0.5), class = sd) # random effects
-)
 
 fits <- map(bfa_split, function(x) {
   x <- select(x, -first_anc, -trimester, -consult_length)
@@ -21,6 +17,7 @@ fits <- map(bfa_split, function(x) {
     cores = 4,
     iter = 4000,
     prior = prior_spec,
+    silent = 0,
     control = list(adapt_delta = 0.99)
   )
 })
