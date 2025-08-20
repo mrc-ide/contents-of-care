@@ -192,7 +192,7 @@ facility_survey_cl <- mutate(
   facility_survey_cl,
   across(
     everything(),
-    ~ ifelse(. %in% c(888, 999, 99999, 71210, 888888, 88888, 88888888, 99999999, 88889999), NA, .)
+    ~ ifelse(. %in% c(888, 8888, 999, 99999, 71210, 888888, 88888, 88888888, 99999999, 88889999), NA, .)
   )
 )
 ## 71210 because that's almost 195 births per day in a facility with 5 beds.
@@ -304,6 +304,30 @@ facility_survey_cl <- rename(
 )
 
 
+## Scaling should happen here.
+## Scale continuous variables before splitting
+cols_to_scale <- c(
+  "total_attendance_2009",
+  ## "new_patients_2009", <- Exclude because 56 NAs
+  "anc_visits_2009",
+  "number_of_births_2009",
+  "number_of_beds_for_delivery"
+  ## Exclude number_of_women_referred_to_hf because of 170 NAs
+  ## "number_of_women_referred_to_hf",
+)
+
+scaled_col_names <- paste0(cols_to_scale, "_scaled")
+
+facility_survey_cl <- mutate(
+  facility_survey_cl,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
+
 
 saveRDS(facility_survey_cl, "benin_facility_survey_clinical.rds")
 orderly_artefact(
@@ -314,8 +338,8 @@ orderly_artefact(
 ## Administrative and financial aspects of the health facility
 infile <- "benhrbf2_e.dta"
 orderly_shared_resource(benin_hf_admin.dta = paste0(indir, infile))
-## convert.factors = FALSE is used to avoid converting factors to underlying codes
-## so we don't run into encoding issues
+## convert.factors = FALSE is used to avoid converting factors to underlying 
+## codes so we don't run into encoding issues
 facility_survey_admin <- read.dta("benin_hf_admin.dta", convert.factors = FALSE)
 ## This dataset also has 201 facilities
 facility_survey_admin$facility_type <- case_when(
@@ -327,7 +351,8 @@ facility_survey_admin$facility_type <- case_when(
   facility_survey_admin$e1_1 == 6 ~ "Standalone maternity unit",
   facility_survey_admin$e1_1 == 7 ~ "Standalone dispensary",
   facility_survey_admin$e1_1 == 8 ~ "Clinic/Polyclinic",
-  facility_survey_admin$e1_1 == 9 ~ "Medical office (or private doctor's office)",
+  facility_survey_admin$e1_1 == 9 ~
+    "Medical office (or private doctor's office)",
   facility_survey_admin$e1_1 == 10 ~ "Birthing clinic",
   facility_survey_admin$e1_1 == 11 ~ "Faith-based private facility",
   TRUE ~ NA_character_
@@ -466,6 +491,14 @@ z$nursing_and_midwifery_per_10000 <-
   (z$nursing_and_midwifery / z$catchment_pop) * 10000
 z$doctor_or_nursing_and_midwifery_per_10000 <-
   (z$doctor_or_nursing_and_midwifery / z$catchment_pop) * 10000
+
+
+scaled_col_names <-
+  c(scaled_col_names, "doctor_or_nursing_and_midwifery_scaled")
+
+z$doctor_or_nursing_and_midwifery_scaled <-
+  scale(z$doctor_or_nursing_and_midwifery)
+
 ## Sense checked the numbers; they roughly make sense, except for facilities
 ## with very small catchment populations. As these are not used in DCOs, I am
 ## sort of okay with the data.
@@ -557,26 +590,7 @@ benin_dco <- mutate(
   })
 )
 
-## Scale continuous variables before splitting
-cols_to_scale <- c(
-  "doctor_or_nursing_and_midwifery_per_10000",
-  "total_attendance_2009",
-  ##"new_patients_2009", <- Exclude because lots of NAs
-  "anc_visits_2009"
-  ## Exclude number_of_women_referred_to_hf because of 170 NAs
-  ##"number_of_women_referred_to_hf",
-)
 
-scaled_col_names <- paste0(cols_to_scale, "_scaled")
-
-benin_dco <- mutate(
-  benin_dco,
-  across(
-    all_of(cols_to_scale),
-    ~ scale(.)[, 1],
-    .names = "{.col}_scaled"
-  )
-)
 
 saveRDS(benin_dco, "benin_dco.rds")
 orderly_artefact(
@@ -592,8 +606,8 @@ benin_small <- select(
   facility_status_mapping,
   pregnant_women_private_space,
   fetoscope, women_in_labour_pay,
-  hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
-  number_of_births_2009, number_of_beds_for_delivery,
+  hcw_qualification, first_anc, trimester,
+  time_elapsed_since_start_of_day,  
   all_of(scaled_col_names),
 )
 
