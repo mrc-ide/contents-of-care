@@ -516,7 +516,7 @@ z$doctor_or_nursing_and_midwifery_scaled <- tmp[, 1]
 scaled_attrs <- bind_rows(
   scaled_attrs,
   data.frame(
-    variable = "doctor_or_nursing_and_midwifery_scaled",
+    variable = "doctor_or_nursing_and_midwifery",
     mean = attr(tmp, "scaled:center"),
     sd = attr(tmp, "scaled:scale")
   )

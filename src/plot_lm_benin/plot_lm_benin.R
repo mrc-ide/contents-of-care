@@ -12,6 +12,12 @@ library(tidyr)
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
+orderly_dependency(
+  "process_benin", "latest",
+  files = c("benin_scaled_vars_attrs.rds")
+)
+benin_scaled_vars_attrs <- readRDS("benin_scaled_vars_attrs.rds")
+
 orderly_dependency("lm_benin", "latest", files = c("benin_dco_fits.rds"))
 fits <- readRDS("benin_dco_fits.rds")
 
@@ -26,14 +32,6 @@ fixed_effects <- separate(
   fixed_effects, datacut,
   into = c("anc", "trimester"), sep = "_"
 )
-
-fixed_effects$anc <- factor(
-  fixed_effects$anc,
-  levels = c("oui", "non"),
-  labels = c("First ANC", "Follow-up ANC"),
-  ordered = TRUE
-)
-
 
 saveRDS(fixed_effects, file = "benin_dco_bayes_fixed_effects.rds")
 orderly_artefact(
@@ -125,12 +123,6 @@ ran_effects <- separate(
   into = c("anc", "trimester"), sep = "_"
 )
 
-ran_effects$anc <- factor(
-  ran_effects$anc,
-  levels = c("oui", "non"),
-  labels = c("First ANC", "Follow-up ANC"),
-  ordered = TRUE
-)
 
 saveRDS(ran_effects, file = "benin_dco_bayes_random_effects.rds")
 orderly_artefact(
@@ -184,12 +176,6 @@ coeffs_gt_0 <- separate(
   into = c("anc", "trimester"), sep = "_"
 )
 
-coeffs_gt_0$anc <- factor(
-  coeffs_gt_0$anc,
-  levels = c("oui", "non"),
-  labels = c("First ANC", "Follow-up ANC"),
-  ordered = TRUE
-)
 
 
 saveRDS(coeffs_gt_0, file = "benin_dco_bayes_coeffs_gt_0.rds")
@@ -215,7 +201,6 @@ p <- ggplot(coeffs_gt_0) +
     fill = "red"
   ) +
   geom_vline(xintercept = 0.5, linetype = "dashed", alpha = 0.5) +
-  scale_y_discrete(breaks = breaks, labels = labels) +
   xlim(0, 1) +
   xlab("Posterior probability of coefficient > 0") +
   theme_manuscript() +
