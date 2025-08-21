@@ -327,6 +327,19 @@ facility_survey_cl <- mutate(
   )
 )
 
+scaled_attrs <- map_dfr(
+  cols_to_scale,
+  function(col) {
+    x <- scale(facility_survey_cl[[col]])
+    data.frame(
+      variable = col,
+      mean = attr(x, "scaled:center"),
+      sd = attr(x, "scaled:scale")
+    )
+  }
+)
+
+
 
 
 saveRDS(facility_survey_cl, "benin_facility_survey_clinical.rds")
@@ -496,8 +509,24 @@ z$doctor_or_nursing_and_midwifery_per_10000 <-
 scaled_col_names <-
   c(scaled_col_names, "doctor_or_nursing_and_midwifery_scaled")
 
-z$doctor_or_nursing_and_midwifery_scaled <-
-  scale(z$doctor_or_nursing_and_midwifery)
+tmp <- scale(z$doctor_or_nursing_and_midwifery)
+z$doctor_or_nursing_and_midwifery_scaled <- tmp[, 1]
+  
+
+scaled_attrs <- bind_rows(
+  scaled_attrs,
+  data.frame(
+    variable = "doctor_or_nursing_and_midwifery_scaled",
+    mean = attr(tmp, "scaled:center"),
+    sd = attr(tmp, "scaled:scale")
+  )
+)
+
+saveRDS(scaled_attrs, "benin_scaled_vars_attrs.rds")
+orderly_artefact(
+  files = "benin_scaled_vars_attrs.rds",
+  description = "Benin scaled variables attributes"
+)
 
 ## Sense checked the numbers; they roughly make sense, except for facilities
 ## with very small catchment populations. As these are not used in DCOs, I am
