@@ -2,7 +2,7 @@ library(brms)
 
 
 fits <- map(bfa_split, function(x) {
-  x <- select(x, -first_anc, -trimester, -consult_length)
+  x <- select(x, -first_anc, -trimester)
   insuff_levels <- map(x, ~ length(unique(.))) |> keep(~ . < 2)
   cli_alert_info(
     "Removing variables with insufficient levels: {names(insuff_levels)}"
