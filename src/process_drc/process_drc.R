@@ -1,3 +1,4 @@
+library(cli)
 library(dplyr)
 library(foreign)
 library(janitor)
@@ -24,7 +25,7 @@ drc_baseline_dco <- read_csv("drc_baseline_dco.csv")
 drc_baseline_dco <- rename(
   drc_baseline_dco,
   ## province = f3_id1, ## provice; 12 of these in DRC
-  ##district = f3_id2,
+  ## district = f3_id2,
   ## health_zone = zs_id,
   ## 1094 NAs in health_facility_type;
   ## facility_type = f1_00_01, <-- get this from the health facility survey
@@ -114,6 +115,7 @@ drc_baseline_dco <- rename(
   consult_length = f3_02_20m
 )
 
+
 ## One of the start times is recorded as 100; end time here is 1020
 ## so start time is most likely 1000; Fixing this else it would be
 ## converted to 0100 i.e. 1am
@@ -134,18 +136,24 @@ drc_baseline_dco <- mutate(
   drc_baseline_dco,
   across(
     c(start_time_of_consultation, end_time_of_consultation),
-    ~ sprintf("%04d", .)))
+    ~ sprintf("%04d", .)
+  )
+)
 
+## This needs to happen after the above fixes
 drc_baseline_dco <- mutate(
   drc_baseline_dco,
   across(
-    c(start_time_of_consultation,end_time_of_consultation),
+    c(start_time_of_consultation, end_time_of_consultation),
     ~ case_when(
       . %in% c(-999999, 0) ~ NA_character_,
       TRUE ~ as.character(.)
     )
   )
 )
+
+
+
 
 drc_baseline_dco$consult_length <- case_when(
   drc_baseline_dco$consult_length < 0 ~ NA,
@@ -163,7 +171,10 @@ drc_baseline_dco$consult_end_formatted <- hm(
 )
 ## Find rows where the end time is before the start time
 ## This is likely a data entry error
-idx <- which(drc_baseline_dco$consult_end_formatted < drc_baseline_dco$consult_start_formatted)
+idx <-
+  which(
+    drc_baseline_dco$consult_end_formatted < drc_baseline_dco$consult_start_formatted
+  )
 tmp <- drc_baseline_dco$consult_end_formatted[idx]
 drc_baseline_dco$consult_end_formatted[idx] <-
   drc_baseline_dco$consult_start_formatted[idx]
@@ -176,9 +187,6 @@ drc_baseline_dco$consult_length_calc <-
 ## 131 rows where consult_length and consult_length_calc different
 ## Having checked the start and end times, we can assume that the
 ## consult_length is incorrect, assuming the times are correct.
-
-
-
 
 drc_baseline_dco <- rename(
   drc_baseline_dco,
@@ -353,6 +361,7 @@ orderly_artefact(
 infile <- "facility_f1_data.csv"
 orderly_shared_resource(drc_baseline_hf.csv = paste(indir, infile, sep = "/"))
 drc_baseline_hf <- read_csv("drc_baseline_hf.csv")
+
 drc_baseline_hf$province <- case_when(
   drc_baseline_hf$f1_id1 == 1 ~ "Bandundu",
   drc_baseline_hf$f1_id1 == 2 ~ "Ecuador",
@@ -403,11 +412,6 @@ drc_baseline_hf$catchment_pop <- drc_baseline_hf$f1_07_02a
 drc_baseline_hf$catchment_pop <- ifelse(
   drc_baseline_hf$catchment_pop < 0, NA_integer_, drc_baseline_hf$catchment_pop
 )
-drc_baseline_hf$catchment_pop_binned <-
-  cut(
-    drc_baseline_hf$catchment_pop,
-    breaks = c(0, 6000, 8000, 10000, 14000, Inf),
-    dig.lab = 5, ordered_result = TRUE)
 
 
 drc_baseline_hf$catchment_pop_pregnant_women <- drc_baseline_hf$f1_07_02b
@@ -415,25 +419,12 @@ drc_baseline_hf$catchment_pop_pregnant_women <- ifelse(
   drc_baseline_hf$catchment_pop_pregnant_women < 0, NA_integer_,
   drc_baseline_hf$catchment_pop_pregnant_women
 )
-drc_baseline_hf$catchment_pop_pregnant_women_binned <-
-  cut(
-    drc_baseline_hf$catchment_pop_pregnant_women,
-    breaks = c(0, 30, 150, 300, 500, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  )
-
 
 drc_baseline_hf$catchment_pop_female_15_49 <- drc_baseline_hf$f1_07_02c
 drc_baseline_hf$catchment_pop_female_15_49 <- ifelse(
   drc_baseline_hf$catchment_pop_female_15_49 < 0, NA_integer_,
   drc_baseline_hf$catchment_pop_female_15_49
 )
-drc_baseline_hf$catchment_pop_female_15_49_binned <-
-  cut(
-    drc_baseline_hf$catchment_pop_female_15_49,
-    breaks = c(0, 250, 1000, 1500, 2000, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  )
 
 
 drc_baseline_hf$catchment_pop_under_5 <- drc_baseline_hf$f1_07_02d
@@ -441,13 +432,6 @@ drc_baseline_hf$catchment_pop_under_5 <- ifelse(
   drc_baseline_hf$catchment_pop_under_5 < 0, NA_integer_,
   drc_baseline_hf$catchment_pop_under_5
 )
-
-drc_baseline_hf$catchment_pop_under_5_binned <-
-  cut(
-    drc_baseline_hf$catchment_pop_under_5,
-    breaks = c(0, 250, 1000, 1500, 2500, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  )
 
 
 ## Information from the register
@@ -461,12 +445,8 @@ drc_baseline_hf$total_attendance_last_month <-
     NA_integer_, drc_baseline_hf$total_attendance_last_month
   )
 
-drc_baseline_hf$total_attendance_last_month_binned <-
-  cut(
-    drc_baseline_hf$total_attendance_last_month,
-    breaks = c(0, 100, 150, 250, 350, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  )
+drc_baseline_hf$total_attendance_last_year <-
+  drc_baseline_hf$total_attendance_last_month * 12
 
 
 drc_baseline_hf$pregnant_women_last_month <-
@@ -476,13 +456,8 @@ drc_baseline_hf$pregnant_women_last_month <- ifelse(
   drc_baseline_hf$pregnant_women_last_month < 0, NA_integer_,
   drc_baseline_hf$pregnant_women_last_month)
 
-drc_baseline_hf$pregnant_women_last_month_binned <-
-  cut(
-    drc_baseline_hf$pregnant_women_last_month,
-    breaks = c(0, 10, 15, 25, 35, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  )
-
+drc_baseline_hf$pregnant_women_last_year <-
+  drc_baseline_hf$pregnant_women_last_month * 12
 
 drc_baseline_hf$total_births_last_month <-
   drc_baseline_hf$f1_07_08
@@ -491,12 +466,9 @@ drc_baseline_hf$total_births_last_month <-
     drc_baseline_hf$total_births_last_month < 0,
     NA_integer_, drc_baseline_hf$total_births_last_month
   )
-drc_baseline_hf$total_births_last_month_binned <-
-  cut(
-    drc_baseline_hf$total_births_last_month,
-    breaks = c(0, 5, 10, 15,25, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  )
+
+drc_baseline_hf$total_births_last_year <-
+  drc_baseline_hf$total_births_last_month * 12
 
 drc_baseline_hf$total_live_births_last_month <-
   drc_baseline_hf$f1_07_09
@@ -504,13 +476,6 @@ drc_baseline_hf$total_live_births_last_month <-
   ifelse(
     drc_baseline_hf$total_live_births_last_month < 0,
     NA_integer_, drc_baseline_hf$total_live_births_last_month
-  )
-
-drc_baseline_hf$total_live_births_last_month_binned <-
-  cut(
-    drc_baseline_hf$total_live_births_last_month,
-    breaks = c(0, 5, 10, 15, 25, Inf),
-    dig.lab = 5, ordered_result = TRUE
   )
 
 
@@ -522,12 +487,6 @@ drc_baseline_hf$total_fullterm_births_last_month <-
     NA_integer_, drc_baseline_hf$total_fullterm_births_last_month
   )
 
-drc_baseline_hf$total_fullterm_births_last_month_binned <-
-  cut(
-    drc_baseline_hf$total_fullterm_births_last_month,
-    breaks = c(0, 5, 10, 15, 25, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  )
 
 drc_baseline_hf$total_fullterm_lowweight_births_last_month <-
   drc_baseline_hf$f1_07_11
@@ -538,13 +497,6 @@ drc_baseline_hf$total_fullterm_lowweight_births_last_month <-
     NA_integer_, drc_baseline_hf$total_fullterm_lowweight_births_last_month
   )
 
-drc_baseline_hf$total_fullterm_lowweight_births_last_month_binned <-
-  cut(
-    drc_baseline_hf$total_fullterm_lowweight_births_last_month,
-    breaks = c(0, 5, 10, 15, 25, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  )
-
 
 drc_baseline_hf$neonatal_deaths_28_days_last_month <-
   drc_baseline_hf$f1_07_12
@@ -553,12 +505,6 @@ drc_baseline_hf$neonatal_deaths_28_days_last_month <-
     drc_baseline_hf$neonatal_deaths_28_days_last_month < 0,
     NA_integer_, drc_baseline_hf$neonatal_deaths_28_days_last_month
   )
-drc_baseline_hf$neonatal_deaths_28_days_last_month_binned <-
-  cut(
-    drc_baseline_hf$neonatal_deaths_28_days_last_month,
-    breaks = c(0, 1, 2, 3, 5, Inf),
-    dig.lab = 5, ordered_result = TRUE
-  ) 
 
 drc_baseline_hf$neonatal_deaths_7_days_last_month <-
   drc_baseline_hf$f1_07_16
@@ -674,6 +620,44 @@ drc_baseline_hf$doctor_or_nursing_and_midwifery <- rowSums(
 drc_baseline_hf$doctor_or_nursing_and_midwifery_per_10000 <-
   (drc_baseline_hf$doctor_or_nursing_and_midwifery / drc_baseline_hf$catchment_pop) * 10000
 
+
+## Scale
+cols_to_scale <- c(
+  "total_attendance_last_year",
+  "total_births_last_year",
+  "pregnant_women_last_year", 
+  "doctor_or_nursing_and_midwifery_per_10000"
+)
+
+scaled_col_names <- paste0(cols_to_scale, "_scaled")
+
+drc_baseline_hf <- mutate(
+  drc_baseline_hf,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
+scaled_attrs <- map_dfr(
+  cols_to_scale,
+  function(col) {
+    x <- scale(drc_baseline_hf[[col]])
+    data.frame(
+      variable = col,
+      mean = attr(x, "scaled:center"),
+      sd = attr(x, "scaled:scale")
+    )
+  }
+)
+
+saveRDS(scaled_attrs, "drc_hf_scaled_attrs.rds")
+orderly_artefact(
+  files = c("drc_hf_scaled_attrs.rds"),
+  description = "DRC health facility data scaled attributes"
+)
+
 saveRDS(drc_baseline_hf, "drc_hf_2015.rds")
 
 ## Combine
@@ -691,16 +675,13 @@ drc_baseline_small <- select(
   drc_baseline_dco_aug,
   consult_length_calc,
   province,
-  ## Facility characteristics
-  doctor_or_nursing_and_midwifery_per_10000,
   facility_status_mapping,
   facility_type,
   milieu_of_residence,
-  total_attendance_last_month,
-  pregnant_women_last_month,
   maternal_deaths_last_month,
   patients_pay_for_consumables,
   hf_has_fetoscope,
+  all_of(scaled_col_names),
   ## Patient characteristics
   pregnancy_in_weeks, first_pregnancy, first_anc,
   trimester,
@@ -736,29 +717,6 @@ drc_baseline_small$hcw_qualification <- case_when(
   drc_baseline_small$hcw_qualification %in% "Lab technician" ~ "Other",
   TRUE ~ drc_baseline_small$hcw_qualification
 )
-
-
-cols_to_scale <- c(
-  "doctor_or_nursing_and_midwifery_per_10000",
-  "total_attendance_last_month",
-  "pregnant_women_last_month"
-)
-## Scale continuous variables before splitting
-drc_baseline_small <- mutate(
-  drc_baseline_small,
-  across(
-    all_of(cols_to_scale),
-    ~ scale(.x, center = TRUE, scale = TRUE),
-    .names = "{col}_scaled"
-  )
-)
-
-drc_baseline_small <- select(
-  drc_baseline_small, -all_of(cols_to_scale)
-)
-
-
-
 
 drc_baseline_split <- split(
   drc_baseline_small,
@@ -796,10 +754,14 @@ drc_baseline_split <- map(drc_baseline_split, function(x) {
   insuff_levels <- factor_vars[which(insuff_levels == 1)]
   ## Drop invariant variables
   
-  cli::cli_alert(
+  cli_alert(
     "Dropping {length(insuff_levels)} invariant variables: {insuff_levels}"
   )
   x <- x[, !names(x) %in% insuff_levels]
+
+  ## Also omit NAs if any
+  x <- na.omit(x)
+  cli_alert("Retaining {nrow(x)} rows")
   x
 })
 

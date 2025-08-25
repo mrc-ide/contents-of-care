@@ -91,12 +91,41 @@ bfa_baseline_dco <- rename(
 )
 
 
+
+
 bfa_baseline_dco <- recode_bfa_vars(bfa_baseline_dco) |>
   fix_bfa_data_errors() |>
   calculate_consult_time() |>
   swap_start_end_times() |>
   calculate_consult_time()
 
+
+cols_to_scale <- c(
+  "num_csps_in_district", "num_personnel"
+)
+
+scaled_col_names <- paste0(cols_to_scale, "_scaled")
+
+bfa_baseline_dco <- mutate(
+  bfa_baseline_dco,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
+scaled_attrs <- map_dfr(
+  cols_to_scale,
+  function(col) {
+    x <- scale(bfa_baseline_dco[[col]])
+    data.frame(
+      variable = col,
+      mean = attr(x, "scaled:center"),
+      sd = attr(x, "scaled:scale")
+    )
+  }
+)
 
 
 
@@ -167,9 +196,23 @@ bfa_hf_survey$facility_level_mapping <- case_when(
 
 
 bfa_hf_survey$total_attendance <- case_when(
-  bfa_hf_survey$total_attendance %in% 9998 ~ NA,
+  bfa_hf_survey$total_attendance %in% c(9998, 9999) ~ NA,
   TRUE ~ bfa_hf_survey$total_attendance
 )
+
+bfa_hf_survey$total_attendance_last_year <-
+  bfa_hf_survey$total_attendance * 12
+
+
+
+bfa_hf_survey$attendance_pregnant_women <- case_when(
+  bfa_hf_survey$attendance_pregnant_women %in% c(9998, 9999) ~ NA,
+  TRUE ~ bfa_hf_survey$attendance_pregnant_women
+)
+
+bfa_hf_survey$pregnant_women_last_year <-
+  bfa_hf_survey$attendance_pregnant_women * 12
+
 
 ## Question is: who owns this health facility?
 bfa_hf_survey$facility_type <- case_when(
@@ -186,14 +229,52 @@ bfa_hf_survey$facility_type <- case_when(
 ## I don't have acccess to the questionnaire but these values feel like code
 ## for NA
 bfa_hf_survey$num_maternal_deaths <- case_when(
-  bfa_hf_survey$num_maternal_deaths %in% c(998, 999, 98) ~ NA,
+  bfa_hf_survey$num_maternal_deaths %in% c(998, 999, 98, 9994, 860) ~ NA,
   TRUE ~ bfa_hf_survey$num_maternal_deaths
 )
+## Note: 860 does't look like an error BUT
+## the value of total_Attendance for this facility is 2
+## and the value of other subpopulation attendances are all NA
 
 bfa_hf_survey$catchment_pop <- case_when(
   bfa_hf_survey$catchment_pop %in% c(99111998, 99999998) ~ NA,
   TRUE ~ bfa_hf_survey$catchment_pop
 )
+
+## Scale
+cols_to_scale <- c(
+  "total_attendance_last_year", "pregnant_women_last_year"
+
+)
+
+scaled_col_names <- c(
+  scaled_col_names,
+  paste0(cols_to_scale, "_scaled")
+)
+
+bfa_hf_survey <- mutate(
+  bfa_hf_survey,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
+scaled_attrs <- rbind(
+  scaled_attrs,
+  map_dfr(cols_to_scale,
+  function(col) {
+    x <- scale(bfa_hf_survey[[col]])
+    data.frame(
+      variable = col,
+      mean = attr(x, "scaled:center"),
+      sd = attr(x, "scaled:scale")
+    )
+  }
+))
+
+
 
 ## Don't use this column; use the column from the HW roster below.
 ## bfa_hf_survey$doctor_or_nursing_and_midwifery <- rowSums(
@@ -227,7 +308,8 @@ bfa_hf_workers$hcw_role <- case_when(
   TRUE ~ as.character(bfa_hf_workers$f1_405)
 )
 
-hcw_count <- count(bfa_hf_workers, SE, hcw_role) |> spread(hcw_role, n)
+hcw_count <-
+  count(bfa_hf_workers, SE, hcw_role) |> spread(hcw_role, n)
 
 hcw_count$doctor_or_nursing_and_midwifery <- rowSums(
   cbind(
@@ -245,6 +327,31 @@ hcw_count <- left_join(hcw_count, bfa_hf_survey, by = "SE")
 hcw_count$doctor_or_nursing_and_midwifery_per_10000 <- (
   hcw_count$doctor_or_nursing_and_midwifery / hcw_count$catchment_pop
 ) * 10000
+
+
+scaled_col_names <-
+  c(scaled_col_names, "doctor_or_nursing_and_midwifery_scaled")
+
+tmp <- scale(hcw_count$doctor_or_nursing_and_midwifery)
+hcw_count$doctor_or_nursing_and_midwifery_scaled <- tmp[, 1]
+
+
+scaled_attrs <- bind_rows(
+  scaled_attrs,
+  data.frame(
+    variable = "doctor_or_nursing_and_midwifery",
+    mean = attr(tmp, "scaled:center"),
+    sd = attr(tmp, "scaled:scale")
+  )
+)
+
+
+saveRDS(scaled_attrs, "bfa_hf_scaled_attrs.rds")
+orderly_artefact(
+  files = c("bfa_hf_scaled_attrs.rds"),
+  description = "BFA health facility data scaled attributes"
+)
+
 
 saveRDS(hcw_count, "bfa_hcw_count.rds")
 orderly_artefact(
@@ -271,13 +378,8 @@ bfa_small <- select(
   consult_length = consult_length_calc,
   ## HF attributes
   region_name,
-  num_csps_in_district = EFF,
-  num_personnel = PERSO,
   milieu_of_residence = milieu_of_residence.x,
-  doctor_or_nursing_and_midwifery_per_10000,
   facility_level_mapping = facility_level_mapping.x,
-  total_attendance,
-  attendance_pregnant_women,
   num_maternal_deaths,
   ## patient attributes
   first_anc,
@@ -289,40 +391,32 @@ bfa_small <- select(
   hcw_qualification,
   ## Appointment attributes
   consult_language,
-  time_elapsed_since_start_of_day
+  time_elapsed_since_start_of_day,
+  ## scaled attributes
+  all_of(scaled_col_names)
 )
 
 
 
 bfa_small <- filter(bfa_small, consult_length != 0)
 bfa_small$log_consult_length <- log(bfa_small$consult_length)
+bfa_small <- select(bfa_small, -consult_length)
 bfa_small <- mutate_if(
   bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
 )
 ## Remove missing continuous variables
 bfa_small <- bfa_small[complete.cases(bfa_small), ]
 ## Scale continuous variables
-cols_to_scale <- c(
-  "num_csps_in_district",
-  "doctor_or_nursing_and_midwifery_per_10000",
-  "total_attendance",
-  "attendance_pregnant_women",
-  "num_personnel"
-)
-bfa_small <- mutate(
-  bfa_small,
-  across(
-    all_of(cols_to_scale),
-    ~ scale(.)[, 1],
-    .names = "{.col}_scaled"
-  )
-)
-bfa_small <- select(bfa_small, -all_of(cols_to_scale))
+
 bfa_split <- split(
   bfa_small,
   list(bfa_small$first_anc, bfa_small$trimester),
   sep = "_"
 )
+
+cli_alert_info("Data split into {length(bfa_split)} datasets")
+cli_alert_info("Number of rows in each dataset: {map_int(bfa_split, nrow)}")
+
 
 saveRDS(bfa_split, "bfa_baseline_split.rds")
 orderly_artefact(

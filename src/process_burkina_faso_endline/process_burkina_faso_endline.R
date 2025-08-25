@@ -93,17 +93,51 @@ bfa_endline_dco <- rename(
   ## more questions upto f3_218
 )
 
+
 bfa_endline_dco <- recode_bfa_vars(bfa_endline_dco) |>
   fix_bfa_data_errors() |>
   calculate_consult_time() |>
   swap_start_end_times() |>
   calculate_consult_time() 
 
+
+
+
+
+
 hcw_count <- readRDS("bfa_hcw_count.rds")
 
 bfa_endline_dco <- left_join(bfa_endline_dco, hcw_count, by = "SE")
 bfa_endline_dco <- rename(bfa_endline_dco, num_csps_in_district = "EFF")
 bfa_endline_dco <- rename(bfa_endline_dco, num_personnel = "PERSO")
+
+
+cols_to_scale <- c(
+  "num_csps_in_district", "num_personnel"
+)
+
+scaled_col_names <- paste0(cols_to_scale, "_scaled")
+
+bfa_endline_dco <- mutate(
+  bfa_endline_dco,
+  across(
+    all_of(cols_to_scale),
+    ~ scale(.)[, 1],
+    .names = "{.col}_scaled"
+  )
+)
+
+scaled_attrs <- map_dfr(
+  cols_to_scale,
+  function(col) {
+    x <- scale(bfa_endline_dco[[col]])
+    data.frame(
+      variable = col,
+      mean = attr(x, "scaled:center"),
+      sd = attr(x, "scaled:scale")
+    )
+  }
+)
 
 
 saveRDS(bfa_endline_dco, "bfa_endline_dco.rds")
@@ -118,13 +152,8 @@ bfa_small <- select(
   consult_length = consult_length_calc,
   ## HF attributes
   region_name,
-  num_csps_in_district,
-  num_personnel,
-  milieu_of_residence = milieu_of_residence.x,
-  doctor_or_nursing_and_midwifery_per_10000,
+  milieu_of_residence = milieu_of_residence.x,  
   facility_level_mapping = facility_level_mapping.x,
-  total_attendance,
-  attendance_pregnant_women,
   num_maternal_deaths,
   ## patient attributes
   patage_i,
@@ -142,7 +171,8 @@ bfa_small <- select(
   hcw_qualification,
   ## Appointment attributes
   consult_language,
-  time_elapsed_since_start_of_day
+  time_elapsed_since_start_of_day,
+  all_of(grep("scaled", colnames(bfa_endline_dco), value = TRUE))
 )
 
 bfa_small$patlit_i <- factor(
@@ -166,34 +196,14 @@ bfa_small$patmar_i <- factor(
 
 bfa_small <- filter(bfa_small, consult_length != 0)
 bfa_small$log_consult_length <- log(bfa_small$consult_length)
+bfa_small <- select(bfa_small, -consult_length)
 
 bfa_small <- mutate_if(
   bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
 )
-## Scale continuous variables
-cols_to_scale <- c(
-  "doctor_or_nursing_and_midwifery_per_10000",
-  "total_attendance",
-  "attendance_pregnant_women",
-  "num_personnel",
-  "patdist_i"
-)
-
-bfa_small <- mutate(
-  bfa_small,
-  across(
-    all_of(cols_to_scale),
-    ~ scale(.)[, 1],
-    .names = "{.col}_scaled"
-  )
-)
 
 ## Remove missing continuous variables
 bfa_small <- bfa_small[complete.cases(bfa_small), ]
-
-## Drop unscaled vars
-bfa_small <- select(bfa_small, -all_of(cols_to_scale))
-set.seed(42)
 
 bfa_split <- split(
   bfa_small,
@@ -201,6 +211,8 @@ bfa_split <- split(
   sep = "_"
 )
 
+cli_alert_info("Data split into {length(bfa_split)} datasets")
+cli_alert_info("Number of rows in each dataset: {map_int(bfa_split, nrow)}")
 
 saveRDS(bfa_split, "bfa_endline_split.rds")
 orderly_artefact(
