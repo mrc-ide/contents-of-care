@@ -226,7 +226,7 @@ p <- ggplot(coeffs_gt_0) +
     fill = "red"
   ) +
   geom_vline(xintercept = 0.5, linetype = "dashed", alpha = 0.5) +
-  scale_y_discrete(breaks = breaks, labels = labels) +
+##  scale_y_discrete(breaks = breaks, labels = labels) +
   xlim(0, 1) +
   xlab("Posterior probability of coefficient > 0") +
   theme_manuscript() +
