@@ -1,7 +1,10 @@
 
 library(brms)
 
-fits <- map(drc_baseline_split, function(x) {
+drc_endline_split <-
+  drc_endline_split[!names(drc_endline_split) %in% "Follow-up ANC_First Trimester"]
+
+fits <- map(drc_endline_split, function(x) {
   brm(
     formula = bf(log_consult_length ~ . -province + (1 | province)),
     data = x,

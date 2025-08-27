@@ -553,7 +553,7 @@ map(drc_endline_split, function(x) {
 
 factor_vars <- c(
   "province",
-  "facility_status",
+  "facility_level_mapping",
   "facility_type",
   "milieu_of_residence",
   "patients_pay_for_consumables",
