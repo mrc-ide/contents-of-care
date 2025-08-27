@@ -21,11 +21,24 @@ infile <- "benhrbf2_m.dta"
 orderly_shared_resource(benin.dta = paste0(indir, infile))
 benin <- read.dta("benin.dta")
 
+# Replace in all character columns
+benin[] <- lapply(benin, function(x) {
+  if (is.character(x) || is.factor(x)) {
+    x <- gsub("oui", "Yes", x, ignore.case = TRUE, useBytes = TRUE)
+    x <- gsub("non", "No", x, ignore.case = TRUE, useBytes = TRUE)
+    x
+  } else {
+    x
+  }
+})
+
+
+
 ## For information on complications, combine the columns for individual
 ## complications into a single column
 benin <- mutate(
   benin,
-  m0_14 = if_else(if_any(m0_14_1a:m0_14_1t, ~ . %in% "1"), "oui", "non")
+  m0_14 = if_else(if_any(m0_14_1a:m0_14_1t, ~ . %in% "1"), "Yes", "No")
 )
 
 ## m0_03 to m3_6 describe the individual steps in the examnination
@@ -115,8 +128,8 @@ benin <- rename(
 
 ## Only sp_ensured3 is coded as 1/2
 benin$sp_ensured3 <- case_when(
-  benin$sp_ensured3 %in% 1L ~ "oui",
-  benin$sp_ensured3 %in% 2L ~ "non",
+  benin$sp_ensured3 %in% 1L ~ "Yes",
+  benin$sp_ensured3 %in% 2L ~ "No",
   TRUE ~ NA_character_
 )
 
@@ -152,8 +165,8 @@ benin$m0_milieu <- case_when(
 benin <- rename(benin, milieu_of_residence = m0_milieu)
 
 benin$first_anc <- case_when(
-  benin$first_anc %in% "oui" ~ "First ANC",
-  benin$first_anc %in% "non" ~ "Follow-up ANC",
+  benin$first_anc %in% "Yes" ~ "First ANC",
+  benin$first_anc %in% "No" ~ "Follow-up ANC",
   TRUE ~ NA_character_
 )
 
@@ -279,12 +292,12 @@ facility_survey_cl <- rename(
   hiv_test_offered = f3_16, 
   pregnant_women_private_space = f3_17, ##
   ## Are the following equipment and materials available and functional
-  consultation_table = f3_18a,
-  blood_pressure_monitor = f3_18b,
-  stethoscope = f3_18c,
-  measuring_tape = f3_18d,
-  weighing_scale_with_height = f3_18e,
-  fetoscope = f3_18f,
+  hf_has_consultation_table = f3_18a,
+  hf_has_blood_pressure_monitor = f3_18b,
+  hf_has_stethoscope = f3_18c,
+  hf_has_measuring_tape = f3_18d,
+  hf_has_weighing_scale_with_height = f3_18e,
+  hf_has_fetoscope = f3_18f,
   gloves_not_torn = f3_18g,
   births_assisted_24_7 = f3_19,
   number_of_days_stay_afetr_birth = f3_20,
@@ -383,7 +396,7 @@ facility_survey_admin$facility_level_mapping <- case_when(
 
 facility_survey_admin$facility_status_mapping <- case_when(
   facility_survey_admin$e1_2 == 1 ~ "Public",
-  TRUE ~ "Other"
+  TRUE ~ "Not public"
 )
 
 saveRDS(facility_survey_admin, "benin_facility_survey_admin.rds")
@@ -563,9 +576,9 @@ benin_dco <- left_join(
 
 
 ## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
-benin_dco$fetoscope <- case_when(
-  benin_dco$fetoscope %in% 2L ~ "No",
-  benin_dco$fetoscope %in% 1L ~ "Yes",
+benin_dco$hf_has_fetoscope <- case_when(
+  benin_dco$hf_has_fetoscope %in% 2L ~ "No",
+  benin_dco$hf_has_fetoscope %in% 1L ~ "Yes",
   TRUE ~ NA_character_
 )
 
@@ -583,8 +596,8 @@ benin_dco$pregnant_women_private_space <- case_when(
 
 
 benin_dco$first_anc <- case_when(
-  benin_dco$first_anc %in% "oui" ~ "First ANC",
-  benin_dco$first_anc %in% "non" ~ "Follow-up ANC",
+  benin_dco$first_anc %in% "Yes" ~ "First ANC",
+  benin_dco$first_anc %in% "No" ~ "Follow-up ANC",
   TRUE ~ benin_dco$first_anc
 )
 
@@ -605,7 +618,7 @@ benin_dco$hcw_qualification <- relevel(
 factor_vars <- c(
   "milieu_of_residence", "health_zone", "facility_level_mapping",
   "facility_status_mapping", "pregnant_women_private_space",
-  "fetoscope", "women_in_labour_pay",
+  "hf_has_fetoscope", "women_in_labour_pay",
   "hcw_qualification", "first_anc", "trimester"
 )
 
@@ -634,7 +647,7 @@ benin_small <- select(
   facility_level_mapping,
   facility_status_mapping,
   pregnant_women_private_space,
-  fetoscope, women_in_labour_pay,
+  hf_has_fetoscope, women_in_labour_pay,
   hcw_qualification, first_anc, trimester,
   time_elapsed_since_start_of_day,  
   all_of(scaled_col_names),
@@ -654,18 +667,6 @@ benin_split <- split(
   sep = "_"
 )
 
-benin_split <- map(benin_split, function(x) {
-  insuff_levels <- map_int(factor_vars, function(var) length(unique(x[[var]])))
-  insuff_levels <- factor_vars[which(insuff_levels == 1)]
-  ## Drop invariant variables
-  cli::cli_alert(
-    "Dropping {length(insuff_levels)} invariant variables: {insuff_levels}"
-  )
-  x <- x[, !names(x) %in% insuff_levels]
-  x
-})
-
-benin_split <- map(benin_split, function(x) na.omit(x))
 
 saveRDS(benin_split, "benin_split.rds")
 orderly_artefact(

@@ -202,8 +202,6 @@ bfa_small <- mutate_if(
   bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
 )
 
-## Remove missing continuous variables
-bfa_small <- bfa_small[complete.cases(bfa_small), ]
 
 bfa_split <- split(
   bfa_small,

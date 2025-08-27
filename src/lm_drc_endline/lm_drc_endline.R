@@ -24,6 +24,38 @@ source("utils.R")
 orderly_dependency("process_drc_endline", "latest", "drc_endline_split.rds")
 drc_endline_split <- readRDS("drc_endline_split.rds")
 
+factor_vars <- c(
+  "province",
+  "facility_level_mapping",
+  "facility_type",
+  "milieu_of_residence",
+  "patients_pay_for_consumables",
+  "hf_has_fetoscope",
+  "first_pregnancy",
+  "first_anc",
+  "trimester",
+  "hcw_sex",
+  "hcw_qualification",
+  "consultation_language"
+)
+
+drc_endline_split <- map(drc_endline_split, function(x) {
+  insuff_levels <- map_int(factor_vars, function(var) length(unique(x[[var]])))
+  insuff_levels <- factor_vars[which(insuff_levels == 1)]
+  ## Drop invariant variables
+
+  cli_alert(
+    "Dropping {length(insuff_levels)} invariant variables: {insuff_levels}"
+  )
+  x <- x[, !names(x) %in% insuff_levels]
+
+  ## Also omit NAs if any
+  x <- na.omit(x)
+  cli_alert("Retaining {nrow(x)} rows")
+  x
+})
+
+
 set.seed(42)
 orderly_resource("lm_drc_multilevel.R")
 

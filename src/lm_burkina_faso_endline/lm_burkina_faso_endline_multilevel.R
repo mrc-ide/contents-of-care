@@ -8,6 +8,7 @@ fits <- map(bfa_split, function(x) {
     "Removing variables with insufficient levels: {names(insuff_levels)}"
   )
   x <- select(x, -names(insuff_levels))
+  x <- na.omit(x)
   brm(
     formula = bf(log_consult_length ~ . -region_name + (1 | region_name)),
     data = x,

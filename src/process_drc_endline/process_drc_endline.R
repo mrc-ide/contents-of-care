@@ -452,7 +452,7 @@ tmp$doctor_or_nursing_and_midwifery_per_10000 <-
   (tmp$doctor_or_nursing_and_midwifery / tmp$catchment_pop) * 10000
 
 x <- scale(tmp$doctor_or_nursing_and_midwifery_per_10000)
-tmp$doctor_or_nursing_and_midwifery_per_10000_scaled <- x[, 1]
+tmp$doctor_or_nursing_and_midwifery_scaled <- x[, 1]
   
 
 
@@ -482,7 +482,7 @@ drc_endline_dco <- left_join(
 )
 
 drc_endline_dco <- left_join(
-  drc_endline_dco, tmp[, c("f1_10", "doctor_or_nursing_and_midwifery_per_10000_scaled")],
+  drc_endline_dco, tmp[, c("f1_10", "doctor_or_nursing_and_midwifery_scaled")],
   by = c("f3_10" = "f1_10")
 )
 
@@ -507,7 +507,7 @@ drc_endline_small <- select(
   languages_aligned,
   patients_pay_for_consumables,
   hf_has_fetoscope,
-  doctor_or_nursing_and_midwifery_per_10000_scaled,
+  doctor_or_nursing_and_midwifery_scaled,
   ## Patient characteristics
   pregnancy_in_weeks, first_pregnancy, first_anc,
   trimester,
@@ -537,7 +537,7 @@ drc_endline_small <- select(drc_endline_small, -consult_length_calc)
 
 drc_endline_split <- split(
   drc_endline_small,
-  list(drc_endline_dco$first_anc, drc_endline_dco$trimester),
+  list(drc_endline_small$first_anc, drc_endline_small$trimester),
   sep = "_"
 )
 
@@ -545,41 +545,6 @@ drc_endline_split <- split(
 map(drc_endline_split, nrow)
 map(drc_endline_split, function(x) {
   map(x, ~ sum(is.na(.))) |> keep(~ . > 0)
-})
-
-##drc_endline_split <- keep(drc_endline_split, function(x) nrow(x) >= 30)
-
-
-
-factor_vars <- c(
-  "province",
-  "facility_level_mapping",
-  "facility_type",
-  "milieu_of_residence",
-  "patients_pay_for_consumables",
-  "hf_has_fetoscope",
-  "first_pregnancy",
-  "first_anc",
-  "trimester",
-  "hcw_sex",
-  "hcw_qualification",
-  "consultation_language"
-)
-
-drc_endline_split <- map(drc_endline_split, function(x) {
-  insuff_levels <- map_int(factor_vars, function(var) length(unique(x[[var]])))
-  insuff_levels <- factor_vars[which(insuff_levels == 1)]
-  ## Drop invariant variables
-  
-  cli_alert(
-    "Dropping {length(insuff_levels)} invariant variables: {insuff_levels}"
-  )
-  x <- x[, !names(x) %in% insuff_levels]
-
-  ## Also omit NAs if any
-  x <- na.omit(x)
-  cli_alert("Retaining {nrow(x)} rows")
-  x
 })
 
 saveRDS(drc_endline_split, "drc_endline_split.rds")

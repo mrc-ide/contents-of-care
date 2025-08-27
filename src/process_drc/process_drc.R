@@ -373,7 +373,7 @@ drc_baseline_hf$province <- case_when(
   TRUE ~ as.character(drc_baseline_hf$f1_id1)
 )
 
-drc_baseline_hf$facility_type <- case_when(
+drc_baseline_hf$facility_level_mapping <- case_when(
   drc_baseline_hf$f1_00_01 == 1 ~ "Secondary",
   drc_baseline_hf$f1_00_01 == 2 ~ "Primary",
   TRUE ~ as.character(drc_baseline_hf$f1_00_01)
@@ -617,7 +617,7 @@ drc_baseline_hf$doctor_or_nursing_and_midwifery <- rowSums(
   na.rm = TRUE
 )
 
-drc_baseline_hf$doctor_or_nursing_and_midwifery_per_10000 <-
+drc_baseline_hf$doctor_or_nursing_and_midwifery <-
   (drc_baseline_hf$doctor_or_nursing_and_midwifery / drc_baseline_hf$catchment_pop) * 10000
 
 
@@ -626,7 +626,7 @@ cols_to_scale <- c(
   "total_attendance_last_year",
   "total_births_last_year",
   "pregnant_women_last_year", 
-  "doctor_or_nursing_and_midwifery_per_10000"
+  "doctor_or_nursing_and_midwifery"
 )
 
 scaled_col_names <- paste0(cols_to_scale, "_scaled")
@@ -639,6 +639,8 @@ drc_baseline_hf <- mutate(
     .names = "{.col}_scaled"
   )
 )
+
+
 
 scaled_attrs <- map_dfr(
   cols_to_scale,
@@ -676,7 +678,7 @@ drc_baseline_small <- select(
   consult_length_calc,
   province,
   facility_status_mapping,
-  facility_type,
+  facility_level_mapping,
   milieu_of_residence,
   maternal_deaths_last_month,
   patients_pay_for_consumables,
@@ -720,7 +722,7 @@ drc_baseline_small$hcw_qualification <- case_when(
 
 drc_baseline_split <- split(
   drc_baseline_small,
-  list(drc_baseline_dco_aug$first_anc, drc_baseline_dco_aug$trimester),
+  list(drc_baseline_small$first_anc, drc_baseline_small$trimester),
   sep = "_"
 )
 
@@ -730,40 +732,8 @@ map(drc_baseline_split, function(x) {
   map(x, ~ sum(is.na(.))) |> keep(~ . > 0)
 })
 
-##drc_baseline_split <- keep(drc_baseline_split, function(x) nrow(x) >= 30)
 
-drc_baseline_split <- map(drc_baseline_split, na.omit)
 
-factor_vars <- c(
-  "province",
-  "facility_status",
-  "facility_type",
-  "milieu_of_residence",
-  "patients_pay_for_consumables",
-  "hf_has_fetoscope",
-  "first_pregnancy",
-  "first_anc",
-  "trimester",
-  "hcw_sex",
-  "hcw_qualification",
-  "consultation_language"
-)
-
-drc_baseline_split <- map(drc_baseline_split, function(x) {
-  insuff_levels <- map_int(factor_vars, function(var) length(unique(x[[var]])))
-  insuff_levels <- factor_vars[which(insuff_levels == 1)]
-  ## Drop invariant variables
-  
-  cli_alert(
-    "Dropping {length(insuff_levels)} invariant variables: {insuff_levels}"
-  )
-  x <- x[, !names(x) %in% insuff_levels]
-
-  ## Also omit NAs if any
-  x <- na.omit(x)
-  cli_alert("Retaining {nrow(x)} rows")
-  x
-})
 
 saveRDS(drc_baseline_split, "drc_baseline_split.rds")
 orderly_artefact(

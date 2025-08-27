@@ -1,12 +1,14 @@
 library(brms)
 
 fits <- map(bfa_split, function(x) {
-  x <- select(x, -first_anc, -trimester)
+  x <- select(x, -first_anc, -trimester
+              )
   insuff_levels <- map(x, ~ length(unique(.))) |> keep(~ . < 2)
   cli_alert_info(
     "Removing variables with insufficient levels: {names(insuff_levels)}"
   )
   x <- select(x, -names(insuff_levels))
+  x <- na.omit(x)
   brm(
     formula = bf(log_consult_length ~ . - region_name + (1 | region_name)),
     data = x,
