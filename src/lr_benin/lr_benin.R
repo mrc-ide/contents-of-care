@@ -15,6 +15,9 @@ library(tibble)
 library(tidylog)
 library(tidyr)
 
+pars <- orderly_parameters(debug = TRUE)
+
+if (pars[["debug"]]) iter <- 100 else iter <- 4000
 
 
 
@@ -59,7 +62,7 @@ fits <- map_depth(benin_split, 3, function(x) {
     drop_unused_levels = TRUE,
     chains = 4,
     cores = 4,
-    iter = 4000,
+    iter = iter,
     prior = prior_spec,
     control = list(adapt_delta = 0.99)
   )
@@ -72,4 +75,8 @@ fits <- map_depth(benin_split, 3, function(x) {
 
 
 saveRDS(fits, "benin_lr_fits.rds")
-orderly_artefact("benin_lr_fits.rds", "benin_lr_fits.rds")
+
+orderly_artefact(
+  files = glue("{fit_names}.rds"),
+  description = "benin_lr_fits.rds"
+)

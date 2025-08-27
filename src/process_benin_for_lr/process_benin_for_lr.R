@@ -42,8 +42,8 @@ with_completeness_idx <- imap(
         x <- select(df, any_of(intv_type))
         steps_taken <- rowwise(x) |>
           mutate(
-            steps_taken = sum(c_across(any_of(intv_type)) %in% "oui"),
-            steps_missed = sum(c_across(any_of(intv_type)) %in% "non"),
+            steps_taken = sum(c_across(any_of(intv_type)) %in% "Yes"),
+            steps_missed = sum(c_across(any_of(intv_type)) %in% "No"),
             steps_na = sum(is.na(c_across(any_of(intv_type))))
           ) |>
           select(steps_taken, steps_missed, steps_na) 
@@ -60,6 +60,7 @@ with_completeness_idx <- imap(
 
 
 ## Select covariates
+scaled_vars <- grep("scaled", colnames(x), value = TRUE)
 with_completeness_idx <- map_depth(
   with_completeness_idx, 3, function(df) {
     select(
@@ -68,10 +69,10 @@ with_completeness_idx <- map_depth(
       facility_level_mapping,
       facility_status_mapping,
       pregnant_women_private_space,
-      doctor_or_nursing_and_midwifery_per_10000_scaled,
-      fetoscope, number_of_births_2009, women_in_labour_pay,
+      hf_has_fetoscope, women_in_labour_pay,
       hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
-      steps_taken, steps_total
+      steps_taken, steps_total,
+      all_of(scaled_vars)
     )
  })
 
