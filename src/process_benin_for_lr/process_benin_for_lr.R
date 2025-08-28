@@ -33,6 +33,13 @@ third_trimester <- select(
 ) |> filter(trimester %in% "Third Trimester")
 
 
+## First ensure that there are recorded steps for each intervention type
+## If not, drop that intervention type.
+intervention_types <-
+  keep(intervention_types, function(intv_type) {
+    length(intersect(intv_type, colnames(benin_dco)))> 0 
+})
+
 ## For each type of intervention, create new variable that indicates
 ## the number of steps taken
 with_completeness_idx <- imap(
@@ -60,9 +67,11 @@ with_completeness_idx <- imap(
 
 
 ## Select covariates
-scaled_vars <- grep("scaled", colnames(x), value = TRUE)
+
 with_completeness_idx <- map_depth(
   with_completeness_idx, 3, function(df) {
+    scaled_vars <- grep("scaled", colnames(df), value = TRUE)
+    cli_inform("Selecting covariates for {scaled_vars}")
     select(
       df, consult_length,
       milieu_of_residence, health_zone,
