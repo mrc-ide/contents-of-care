@@ -35,3 +35,4 @@ orderly_run("lm_burkina_faso_endline")
 ## 27.08.2025
 ## task_create_expr(orderly2::orderly_run("lm_drc_endline")) ## "337afedf3a5c64c8e96a4fcd16b71363"
 ## task_create_expr(orderly2::orderly_run("lm_multicountry", parameters = list(debug = FALSE))) ## "fe9fcdc08cd83000173a247a22265bd5"
+## task_create_expr(orderly2::orderly_run("lr_benin", parameters = list(debug = FALSE))) ## "7a2e39f42036a6ee8d3d7fca9328b409"

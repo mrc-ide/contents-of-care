@@ -211,6 +211,9 @@ intervention_types <- list(
     "info_abnormal_presentation", "info_infection", "info_uterine_perforation",
     "info_hypertensive_crises", "info_ecclampsia", "info_pre_eclampsia",
     "info_severe_anemia", "info_multiple_pregnancy", "info_embolism",
+    "fever_as_risk_factor_explained", "tiredness_as_risk_factor_explained",
+    "swelling_as_risk_factor_explained",
+    "headache_or_blurred_vision_as_risk_factor_explained",
 
     # Nutrition & supplementation
     "diet_suggested",
