@@ -160,7 +160,9 @@ intervention_types <- list(
     "third_person_assistance_asked",
     "confidentiality_ensured",
     # Closing the loop
-    "exam_results_explained"
+    "exam_results_explained",
+    "questions_invited_at_the_end",
+    "visual_aids_used"
   ),
 
   `Maternal and fetal assessment` = c(

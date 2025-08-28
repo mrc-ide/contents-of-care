@@ -132,7 +132,9 @@ bfa_baseline_dco <- rename(
   contraception_hormonal_methods_discussed = f3_214_b,
   contraception_surgical_methods_discussed = f3_214_c,
   contraception_traditional_methods_discussed = f3_214_d,
-  contraception_methods_compared = f3_214_e
+  contraception_methods_compared = f3_214_e,
+  questions_invited_at_the_end = f3_215,
+  visual_aids_used = f3_216
 )
 
 
