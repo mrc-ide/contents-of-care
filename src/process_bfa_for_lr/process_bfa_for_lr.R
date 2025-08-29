@@ -25,7 +25,7 @@ bfa_dco <- if (pars$survey == "baseline") bfa_baseline_dco else bfa_endline_dco
 
 ## Unlike Benin DCO, Questions here have not been broken down by trimester
 bfa_split <- split(
-  bfa_dco, list(bfa_dco$trimester, bfa_dco$first_anc)
+  bfa_dco, list(bfa_dco$trimester, bfa_dco$first_anc), sep = "_"
 )
 
 ## First ensure that there are recorded steps for each intervention type
