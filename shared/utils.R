@@ -152,59 +152,87 @@ probability_of_direction <- function(fit) {
 
 intervention_types <- list(
   `Patient-HCW interaction` = c(
-    # Introductions & communication
+    # From earlier version
     "hcw_intro_name",
     "hcw_intro_degree",
     "procedure_explained",
     "questions_encouraged",
     "third_person_assistance_asked",
     "confidentiality_ensured",
-    # Closing the loop
     "exam_results_explained",
     "questions_invited_at_the_end",
-    "visual_aids_used"
+    "visual_aids_used",
+
+    # New f3_02_* equivalents
+    "hcw_introduced_name",
+    "hcw_introduced_professional_grade",
+    "hcw_explained_procedure",
+    "hcw_encouraged_questions",
+    "hcw_offered_third_party_support",
+    "hcw_asked_patient_name",
+    "hcw_asked_if_patient_had_questions",
+    "hcw_used_visual_aids",
+    "hcw_ensured_exam_confidentiality"
   ),
 
   `Maternal and fetal assessment` = c(
-    # General physical exams
+    # From earlier version
     "weight", "patient_weight",
     "temperature", "patient_temperature",
-    "blood_pressure",
-    "patient_pulse", "patient_respiratory_rate",
+    "blood_pressure", "patient_pulse", "patient_respiratory_rate",
     "inspection_of_mucous_membranes",
     "speculum_exam",
     "patient_chest_auscultation",
-    "lower_limb_edema",
-    "breast_exam",
-
-    # Laboratory / point-of-care tests
+    "lower_limb_edema", "breast_exam",
     "patient_blood_taken",
     "hemoglobin_test_requested",
     "urine_test_albumin_glucose",
     "albuminuria", "glucoserie",
-
-    # Ultrasound & fetal exams
     "us_requested",
     "uterus_measured2", "uterus_measured3", "uterus_size_exam",
     "fetal_presentation_exam",
     "fetal_heartbeat_checked2", "fetal_heartbeat_checked3",
     "fetal_heartbeat_listened",
-
-    # Symptom checks & maternal history (current pregnancy)
     "abdominal_pain", "breathing_difficulty", "severe_vomiting",
     "convulsions", "health_problems_before_or_during_pregnancy",
     "stress", "domestic_violence", "drug_treatment_course",
-    "vaginal_bleeding", "bleeding",
-    "fever",
+    "vaginal_bleeding", "bleeding", "fever",
     "headache", "headache_or_blurred_vision",
-    "swelling",
-    "tiredness",
-    "fetus_movement",
-    "other_symptoms", "pregnancy_related_symptoms"
+    "swelling", "tiredness",
+    "fetus_movement", "other_symptoms", "pregnancy_related_symptoms",
+
+    # New f3_02_* variables
+    "hcw_measured_patient_weight",
+    "hcw_measured_patient_pulse",
+    "hcw_measured_respiratory_rate",
+    "hcw_measured_temperature",
+    "hcw_measured_blood_pressure",
+    "hcw_performed_chest_auscultation",
+    "hcw_examined_conjunctiva_or_palms_for_anemia",
+    "hcw_examined_legs_or_feet_for_edema",
+    "hcw_palpated_abdomen_for_fetal_position_or_used_ultrasound",
+    "hcw_asked_about_severe_abdominal_pain",
+    "hcw_asked_about_severe_breathing_difficulty",
+    "hcw_asked_about_severe_vomiting",
+    "hcw_asked_about_seizures_or_epilepsy",
+    "hcw_asked_about_health_problems_during_pregnancy",
+    "hcw_asked_about_stress_or_depression",
+    "hcw_asked_about_domestic_or_partner_violence",
+    "hcw_asked_about_current_medications",
+    "hcw_asked_about_hiv_status",
+    "hcw_asked_about_tetanus_vaccination_status",
+    "hcw_asked_about_bleeding",
+    "hcw_asked_about_fever",
+    "hcw_asked_about_headache_or_blurred_vision",
+    "hcw_asked_about_swelling_face_hands_feet",
+    "hcw_asked_about_fatigue_or_shortness_of_breath",
+    "hcw_asked_if_fetus_moved",
+    "hcw_asked_about_other_symptoms_or_problems",
+    "hcw_asked_about_symptoms_related_to_pregnancy"
   ),
 
   `Informational Interventions` = c(
-    # Danger signs and complications
+    # From earlier version
     "info_complications", "info_placenta_previa", "info_premature_rupture",
     "info_postpartum_hemorrhage", "info_retained_placenta",
     "info_uterus_inverted", "info_ectopic_pregnancy",
@@ -213,104 +241,116 @@ intervention_types <- list(
     "info_abnormal_presentation", "info_infection", "info_uterine_perforation",
     "info_hypertensive_crises", "info_ecclampsia", "info_pre_eclampsia",
     "info_severe_anemia", "info_multiple_pregnancy", "info_embolism",
-    "fever_as_risk_factor_explained", "tiredness_as_risk_factor_explained",
+    "fever_as_risk_factor_explained",
+    "tiredness_as_risk_factor_explained",
     "swelling_as_risk_factor_explained",
     "headache_or_blurred_vision_as_risk_factor_explained",
-
-    # Nutrition & supplementation
-    "diet_suggested",
+    "diet_suggested", "vaccination_suggested",
     "diet_during_pregnancy_explained",
     "ifa_role_explained", "ifa_dosage_explained", "ifa_side_effects_explained",
     "pregnancy_progression_explained",
-
-    # Malaria prevention
-    "ipt_role_explained", "ipt_dosage_explained",
-    "antimalarial_side_effects_explained",
-    "ipt_second_dose_importance_explained",
-    "itn_use_importance_explained",
-
-    # Vaccination
-    "vaccination_suggested",
+    "ipt_role_explained", "ipt_dosage_explained", "antimalarial_side_effects_explained",
+    "ipt_second_dose_importance_explained", "itn_use_importance_explained",
     "tetanus_injection_role_explained",
-
-    # Birth preparedness & delivery planning
-    "projecting_delivery",
-    "delivery_place_discussed",
-    "birth_preparedness_advised",
-    "skilled_birth_attendant_advised",
+    "projecting_delivery", "delivery_place_discussed",
+    "birth_preparedness_advised", "skilled_birth_attendant_advised",
     "home_birth_items_discussed",
-
-    # Newborn care & breastfeeding
     "newborn_vaccination_importance_explained",
     "exclusive_breastfeeding_explained",
-
-    # Family planning / contraception
     "contraception_barrier_methods_discussed",
     "contraception_hormonal_methods_discussed",
     "contraception_surgical_methods_discussed",
     "contraception_traditional_methods_discussed",
-    "contraception_methods_compared"
+    "contraception_methods_compared",
+
+    # New f3_02_* variables
+    "hcw_advised_on_nutrition_during_pregnancy",
+    "patient_informed_about_pregnancy_progress",
+    "hcw_explained_ifa_role",
+    "hcw_explained_ifa_dosage",
+    "hcw_explained_ifa_side_effects",
+    "hcw_explained_ipt_role",
+    "hcw_explained_ipt_dosage",
+    "hcw_explained_ipt_side_effects",
+    "hcw_explained_importance_second_ipt_dose",
+    "hcw_explained_tetanus_vaccine_role",
+    "hcw_asked_about_birth_plan",
+    "hcw_asked_delivery_location",
+    "hcw_advised_on_birth_preparedness",
+    "hcw_advised_use_of_skilled_birth_attendant",
+    "hcw_discussed_items_needed_for_home_birth",
+    "hcw_discussed_importance_of_newborn_vaccination",
+    "hcw_advised_exclusive_breastfeeding_until_6_months",
+    "hcw_asked_about_awareness_of_contraceptive_methods",
+    "hcw_asked_about_past_use_of_contraceptive_methods",
+    "hcw_asked_about_intent_to_use_contraceptives_postpartum",
+    "hcw_asked_if_patient_knows_where_to_access_fp_services",
+    "hcw_discussed_barrier_methods",
+    "hcw_discussed_hormonal_methods",
+    "hcw_discussed_surgical_methods",
+    "hcw_discussed_traditional_methods",
+    "hcw_compared_contraceptive_methods_effectiveness_and_cost"
   ),
 
   `Preventive measures` = c(
-    # Malaria prevention
+    # From earlier version
     "fansidar_given2", "fansidar_prescribed",
     "sp_given3", "sp_prescribed3", "sp_ensured3",
     "antimalarial_prescribed_or_given",
     "ipt_first_dose_given",
     "mosq_kit_prescribed", "mosq_kit_requested",
     "itn_given",
-
-    # Maternal supplementation
     "ifa_prescribed_or_given",
-
-    # Vaccination
     "tetanus_injection_prescribed_or_given",
-
-    # HIV/syphilis prevention
     "syphilis_test_requested",
     "hiv_test_voluntary_offered",
     "hiv_counselling_referred",
-
-    # General infection prevention & other tests
     "additional_bw_tests_requested",
     "toxoplasmosis_test_requested",
-    "hygiene_measures_before_touching_patient"
+    "hygiene_measures_before_touching_patient",
+
+    # New f3_02_* variables
+    "hcw_provided_ifa_from_six_months",
+    "hcw_provided_tetanus_toxoid_injection",
+    "hcw_provided_ipt_treatment",
+    "hcw_provided_quinine_treatment",
+    "hcw_provided_act_treatment",
+    "patient_received_first_dose_ipt_at_facility",
+    "patient_received_insecticide_treated_net"
   ),
 
   `Continuity of care` = c(
-    # Demographics
-    "patients_age_reported",
-    "patients_height_reported",
-    "patient_residence_reported",
-
-    # Medical history
-    "patient_taken_drugs",
-    "prev_interruption_enquired",
-    "previous_pregnancy_enquired",
+    # From earlier version
+    "patients_age_reported", "patients_height_reported",
+    "patient_residence_reported", "patient_taken_drugs",
+    "prev_interruption_enquired", "previous_pregnancy_enquired",
     "number_of_previous_pregnancies_enquired",
-    "prev_delivery_preterm",
-    "children_death_during_first_week",
-    "heavy_bleeding_during_or_after_delivery",
-    "prev_assisted_delivery",
+    "prev_delivery_preterm", "children_death_during_first_week",
+    "heavy_bleeding_during_or_after_delivery", "prev_assisted_delivery",
     "prev_voluntary_interruption",
-
-    # Reproductive history & ANC follow-up
-    "num_prev_anc_before_this_pregnancy",
-    "date_last_period",
-
-    # Records & documentation
+    "num_prev_anc_before_this_pregnancy", "date_last_period",
     "blood_type_enquired", "blood_type_proof_enquired",
     "blood_type_test_requested", "blood_group_rhesus_requested",
-    "vaccination_record_checked",
-    "health_card_checked",
+    "vaccination_record_checked", "health_card_checked",
+    "hiv_status", "vaccination_against_tetanus",
 
-    # Status items
-    "hiv_status",
-    "vaccination_against_tetanus"
+    # New f3_02_* variables
+    "hcw_asked_patient_age",
+    "hcw_asked_patient_residence",
+    "hcw_asked_patient_medications",
+    "hcw_asked_number_previous_anc_visits",
+    "hcw_asked_last_menstrual_period_date",
+    "hcw_asked_number_previous_pregnancies",
+    "hcw_asked_about_therapeutic_abortions",
+    "hcw_asked_about_preterm_deliveries",
+    "hcw_asked_about_early_neonatal_deaths",
+    "hcw_asked_about_excessive_bleeding",
+    "hcw_asked_about_assisted_deliveries",
+    "hcw_asked_about_induced_abortions",
+    "hcw_asked_about_normal_deliveries",
+    "hcw_recorded_in_health_booklet"
   )
 )
-
 
 
 ks_distance_matrix <- function(data_split, response_var) {
