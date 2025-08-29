@@ -625,6 +625,7 @@ drc_baseline_hf$doctor_or_nursing_and_midwifery <-
 cols_to_scale <- c(
   "total_attendance_last_year",
   "total_births_last_year",
+  
   "pregnant_women_last_year", 
   "doctor_or_nursing_and_midwifery"
 )
@@ -677,13 +678,12 @@ drc_baseline_small <- select(
   drc_baseline_dco_aug,
   consult_length_calc,
   province,
-  facility_status_mapping,
+  facility_type = facility_status_mapping,
   facility_level_mapping,
   milieu_of_residence,
   maternal_deaths_last_month,
   patients_pay_for_consumables,
   hf_has_fetoscope,
-  all_of(scaled_col_names),
   ## Patient characteristics
   pregnancy_in_weeks, first_pregnancy, first_anc,
   trimester,
@@ -691,7 +691,8 @@ drc_baseline_small <- select(
   hcw_sex, hcw_qualification,
   ## Appointment characteristics
   consultation_language,
-  time_elapsed_since_start_of_day
+  time_elapsed_since_start_of_day,
+  all_of(scaled_col_names),
 )
 
 ## drc_baseline_small$first_anc <- factor(
