@@ -25,7 +25,7 @@ drc_dco <- if (pars$survey == "baseline") drc_baseline_dco else drc_endline_dco
 
 ## Unlike Benin DCO, Questions here have not been broken down by trimester
 drc_split <- split(
-  drc_dco, list(drc_dco$trimester, drc_dco$first_anc)
+  drc_dco, list(drc_dco$trimester, drc_dco$first_anc), sep = "_"
 )
 
 ## First ensure that there are recorded steps for each intervention type
