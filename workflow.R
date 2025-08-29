@@ -17,6 +17,13 @@ orderly_run("lm_burkina_faso_baseline")
 orderly_run("process_burkina_faso_endline")
 orderly_run("lm_burkina_faso_endline")
 
+orderly_run("process_benin_for_lr")
+
+orderly_run("process_bfa_for_lr", parameters = list(survey = "baseline"))
+orderly_run("process_bfa_for_lr", parameters = list(survey = "endline"))
+
+orderly_run("process_drc_for_lr", parameters = list(survey = "baseline"))
+orderly_run("process_drc_for_lr", parameters = list(survey = "endline"))
 
 
 

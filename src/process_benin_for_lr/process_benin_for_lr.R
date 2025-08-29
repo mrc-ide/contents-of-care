@@ -44,7 +44,10 @@ intervention_types <-
 ## the number of steps taken
 with_completeness_idx <- imap(
   intervention_types, function(intv_type, intv_name) {
-    map(list(first_trimester, second_trimester, third_trimester), 
+    map(list(
+      `First Trimester` = first_trimester,
+      `Second Trimester` = second_trimester,
+      `Third Trimester` = third_trimester), 
       function(df) {
         x <- select(df, any_of(intv_type))
         steps_taken <- rowwise(x) |>
@@ -76,7 +79,7 @@ with_completeness_idx <- map_depth(
       df, consult_length,
       milieu_of_residence, health_zone,
       facility_level_mapping,
-      facility_status_mapping,
+      facility_type = facility_status_mapping,
       pregnant_women_private_space,
       hf_has_fetoscope, women_in_labour_pay,
       hcw_qualification, first_anc, trimester, time_elapsed_since_start_of_day,
