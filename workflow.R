@@ -25,7 +25,7 @@ orderly_run("process_bfa_for_lr", parameters = list(survey = "endline"))
 orderly_run("process_drc_for_lr", parameters = list(survey = "baseline"))
 orderly_run("process_drc_for_lr", parameters = list(survey = "endline"))
 
-
+orderly_run("process_multicountry_for_lr")
 
 ## Lab notebook
 ## 20.08.2025
@@ -43,3 +43,6 @@ orderly_run("process_drc_for_lr", parameters = list(survey = "endline"))
 ## task_create_expr(orderly2::orderly_run("lm_drc_endline")) ## "337afedf3a5c64c8e96a4fcd16b71363"
 ## task_create_expr(orderly2::orderly_run("lm_multicountry", parameters = list(debug = FALSE))) ## "fe9fcdc08cd83000173a247a22265bd5"
 ## task_create_expr(orderly2::orderly_run("lr_benin", parameters = list(debug = FALSE))) ## "7a2e39f42036a6ee8d3d7fca9328b409"
+
+## 29.08.2025
+## task_create_expr(orderly2::orderly_run("lr_multicountry", parameters = list(debug = FALSE))) ## "5bb42c3085058882a53d271d28431046"
