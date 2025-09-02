@@ -34,7 +34,8 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
     keep(~ !is.na(.))
 
   preds$anc <- str_extract(infile, anc_types, group = NULL) |>
-    keep(~ !is.na(.))
+    keep(~ !is.na(.)) 
+
 
   preds$intervention <-
     gsub(x = infile, pattern = "multicountry_lr_fit_", replacement = "") |>
@@ -47,27 +48,44 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
   
 })
 
+marginal_preds$anc <- recode_factor(
+  marginal_preds$anc,
+  first_anc = "First ANC",
+  follow_up_anc = "Follow-up ANC"
+)
 
-x <- split(marginal_preds, marginal_preds$intervention)
+p <- ggplot(marginal_preds) +
+  geom_line(aes(x = consult_length, y = prob, col = anc)) +
+  geom_ribbon(
+    aes(x = consult_length, ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc),
+    alpha = 0.2
+  ) +
+  scale_x_continuous(
+    breaks = seq(0, 150, 60),
+    labels = seq(0, 150, 60)
+  ) +
+  facet_grid(
+    intervention ~ trimester,
+    labeller = labeller(
+      trimester = to_title_case,
+      intervention = c(
+        "Continuity of care" = "Continuity",
+        "Informational interventions" = "Information",
+        "Maternal and fetal assessment" = "Assessment",
+        "Patient hcw interaction" = "Interaction",
+        "Preventive measures" = "Prevention"
+      )
+    )
+  ) +
+  theme_manuscript()
+p <- p +
+  ylab("Proportion of completed steps") +
+  xlab("Consultation length (minutes)") 
 
-iwalk(x, function(tmp, name) {
+outfile <- "figures/marginal_consult_length"
 
- p <- ggplot(tmp, aes(x = consult_length, y = prob)) +
-   geom_ribbon(aes(ymin = `lower.HPD`, ymax = `upper.HPD`), alpha = 0.2) +
-    geom_line() +
-    labs(
-      x = "Consultation length (minutes)",
-      y = "Predicted number of steps"
-    ) +
-    theme_manuscript() 
-
-  p <- my_facets(p)
-  p <- p + ylab("Proportion of completed steps")
+ggsave_manuscript(outfile, p, width = 12, height = 8)
   
-  outfile <-
-    paste0("figures/", to_snake_case(name), "_consult_length")
-  ggsave_manuscript(outfile, p, width = 12, height = 8)
-})
 
 
 ### 2. Doctor and N&M
@@ -98,36 +116,60 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
 })
 
 
-x <- split(marginal_preds, marginal_preds$intervention)
+marginal_preds$anc <- recode_factor(
+  marginal_preds$anc,
+  first_anc = "First ANC",
+  follow_up_anc = "Follow-up ANC"
+)
 
-iwalk(x, function(tmp, name) {
+p <- ggplot(marginal_preds) +
+  geom_line(aes(x = doctor_or_nursing_and_midwifery_scaled, y = prob, col = anc)) +
+  geom_ribbon(
+    aes(x = doctor_or_nursing_and_midwifery_scaled,
+        ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc),
+    alpha = 0.2
+  ) +
+  scale_x_continuous(
+    breaks = seq(-0.5, 5, 1)
+  ) +
+  facet_grid(
+    intervention ~ trimester,
+    labeller = labeller(
+      trimester = to_title_case,
+      intervention = c(
+        "Continuity of care" = "Continuity",
+        "Informational interventions" = "Information",
+        "Maternal and fetal assessment" = "Assessment",
+        "Patient hcw interaction" = "Interaction",
+        "Preventive measures" = "Prevention"
+      )
+    )
+  ) +
+  theme_manuscript()
+p <- p +
+  ylab("Proportion of completed steps") +
+  xlab("Doctor/N&M per 10,000 population (scaled)") 
 
-  p <- ggplot(tmp, aes(x = doctor_or_nursing_and_midwifery_scaled, y = prob)) +
-   geom_ribbon(aes(ymin = `lower.HPD`, ymax = `upper.HPD`), alpha = 0.2) +
-    geom_line() +
-    labs(
-      x = "Doctor and Nursing & Midwifery",
-      y = "Predicted number of steps"
-    ) +
-    theme_manuscript() 
+outfile <- "figures/marginal_doctor_nursing_midwifery"
 
-  p <- my_facets(p)
-  p <- p + ylab("Proportion of completed steps")
-  
-  outfile <-
-    paste0("figures/", to_snake_case(name), "_doctor_nursing_midwifery")
-  cli_inform("Saving to {outfile}")
-  ggsave_manuscript(outfile, p, width = 12, height = 8)
-})
+ggsave_manuscript(outfile, p, width = 12, height = 8)
 
 
 ### 3. Time elapsed
+breaks <- seq(-60, 1020, 60)
+labels <- seq(5, along.with = breaks)
+
+labels <- case_when(
+  labels < 12 ~ paste0(labels, "AM"),
+  labels >= 12 ~ paste0(labels - 12, "PM"),
+)
+
 
 marginal_preds <- imap_dfr(fits, function(fit, infile) {
   cli_inform("Processing {infile}")
   preds <- emmeans(
     fit, ~time_elapsed_since_start_of_day,
-    at = list(time_elapsed_since_start_of_day = seq(-60, 1200, 60)),
+    at = list(time_elapsed_since_start_of_day = breaks),
     type = "response"
   ) |> confint()
 
@@ -149,31 +191,45 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
 })
 
 
-x <- split(marginal_preds, marginal_preds$intervention)
+marginal_preds$anc <- recode_factor(
+  marginal_preds$anc,
+  first_anc = "First ANC",
+  follow_up_anc = "Follow-up ANC"
+)
 
-iwalk(x, function(tmp, name) {
+p <- ggplot(marginal_preds) +
+  geom_line(aes(x = time_elapsed_since_start_of_day, y = prob, col = anc)) +
+  geom_ribbon(
+    aes(
+      x = time_elapsed_since_start_of_day,
+      ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc
+    ),
+    alpha = 0.2
+  ) +
+  scale_x_continuous(
+    breaks = breaks[seq(1, length(breaks), 4)],
+    labels = labels[seq(1, length(breaks), 4)]) +
+  facet_grid(
+    intervention ~ trimester,
+    labeller = labeller(
+      trimester = to_title_case,
+      intervention = c(
+        "Continuity of care" = "Continuity",
+        "Informational interventions" = "Information",
+        "Maternal and fetal assessment" = "Assessment",
+        "Patient hcw interaction" = "Interaction",
+        "Preventive measures" = "Prevention"
+      )
+    )
+  ) +
+  theme_manuscript()
+p <- p +
+  ylab("Proportion of completed steps") +
+  xlab("") 
 
-  p <- ggplot(tmp, aes(x = time_elapsed_since_start_of_day, y = prob)) +
-   geom_ribbon(aes(ymin = `lower.HPD`, ymax = `upper.HPD`), alpha = 0.2) +
-    geom_line() +
-    scale_x_continuous(
-      breaks = seq(-60, 1200, 120), labels = seq(-60, 1200, 120)/60
-    ) +
-    labs(
-      x = "Time elapsed since 6AM (hours)",
-      y = "Predicted number of steps"
-    ) +
-    theme_manuscript() 
+outfile <- "figures/marginal_time_elapsed_since_start_of_day"
 
-  p <- my_facets(p)
-  p <- p + ylab("Proportion of completed steps")
-  
-  outfile <-
-    paste0("figures/", to_snake_case(name), "_time_elapsed")
-  cli_inform("Saving to {outfile}")
-  ggsave_manuscript(outfile, p, width = 12, height = 8)
-})
-
+ggsave_manuscript(outfile, p, width = 12, height = 8)
 
 ## 4. HCW Qualification
 
@@ -200,26 +256,50 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
   preds
 })
 
-x <- split(marginal_preds, marginal_preds$intervention)
+marginal_preds$anc <- recode_factor(
+  marginal_preds$anc,
+  first_anc = "First ANC",
+  follow_up_anc = "Follow-up ANC"
+)
 
-iwalk(x, function(tmp, name) {
-  p <- ggplot(tmp, aes(x = hcw_qualification, y = prob)) +
-    geom_errorbar(aes(ymin = `lower.HPD`, ymax = `upper.HPD`), alpha = 0.2) +
-    geom_point() +
-    labs(
-      y = "Predicted number of steps"
-    ) +
-    theme_manuscript() +
-    theme(axis.title.x = element_blank())
+dodge_width <- 0.2
 
-  p <- my_facets(p)
+p <- ggplot(marginal_preds, aes(x = hcw_qualification, y = prob, col = anc)) +
+  geom_errorbar(
+    aes(ymin = `lower.HPD`, ymax = `upper.HPD`, col = anc),
+    alpha = 0.5, position = position_dodge(width = dodge_width)
+  ) +
+  geom_point(position = position_dodge(width = dodge_width)) +
+  labs(
+    y = "Predicted number of steps"
+  ) +
+  facet_grid(
+    intervention ~ trimester,
+    labeller = labeller(
+      trimester = to_title_case,
+      intervention = c(
+        "Continuity of care" = "Continuity",
+        "Informational interventions" = "Information",
+        "Maternal and fetal assessment" = "Assessment",
+        "Patient hcw interaction" = "Interaction",
+        "Preventive measures" = "Prevention"
+      )
+    )
+  ) +
+  theme_manuscript() +
+  theme(axis.text.x = element_text(size = 8))
+
+p <- p +
+  ylab("Proportion of completed steps") +
+  xlab("")
+  
 
 
-  outfile <-
-    paste0("figures/", to_snake_case(name), "_hcw_qualification")
-  cli_inform("Saving to {outfile}")
-  ggsave_manuscript(outfile, p, width = 12, height = 8)
-})
+outfile <-
+  paste0("figures/marginal_hcw_qualification")
+cli_inform("Saving to {outfile}")
+ggsave_manuscript(outfile, p, width = 12, height = 8)
+
 
 
 
@@ -248,26 +328,43 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
   preds
 })
 
-x <- split(marginal_preds, marginal_preds$intervention)
+marginal_preds$anc <- recode_factor(
+  marginal_preds$anc,
+  first_anc = "First ANC",
+  follow_up_anc = "Follow-up ANC"
+)
 
-iwalk(x, function(tmp, name) {
-  p <- ggplot(tmp, aes(x = milieu_of_residence, y = prob)) +
-    geom_errorbar(aes(ymin = `lower.HPD`, ymax = `upper.HPD`), alpha = 0.2) +
-    geom_point() +
-    labs(
-      y = "Predicted number of steps"
-    ) + 
-    theme_manuscript() +
-    theme(axis.title.x = element_blank())
+p <- ggplot(marginal_preds, aes(x = milieu_of_residence, y = prob, col = anc)) +
+  geom_errorbar(
+    aes(ymin = `lower.HPD`, ymax = `upper.HPD`, col= anc), alpha = 0.5,
+    position = position_dodge(width = dodge_width)
+  ) +
+  geom_point(position = position_dodge(width = dodge_width)) +
+  facet_grid(
+    intervention ~ trimester,
+    labeller = labeller(
+      trimester = to_title_case,
+      intervention = c(
+        "Continuity of care" = "Continuity",
+        "Informational interventions" = "Information",
+        "Maternal and fetal assessment" = "Assessment",
+        "Patient hcw interaction" = "Interaction",
+        "Preventive measures" = "Prevention"
+      )
+    )
+  ) +
+  labs(y = "Predicted number of steps") + 
+  theme_manuscript() +
+  theme(axis.title.x = element_blank())
 
-  p <- my_facets(p)
 
 
-  outfile <-
-    paste0("figures/", to_snake_case(name), "_milieu_of_residence")
-  cli_inform("Saving to {outfile}")
-  ggsave_manuscript(outfile, p, width = 12, height = 8)
-})
+
+outfile <-
+  paste0("figures/marginal_milieu_of_residence")
+cli_inform("Saving to {outfile}")
+ggsave_manuscript(outfile, p, width = 12, height = 8)
+
 
 
 
