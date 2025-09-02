@@ -11,7 +11,7 @@ library(tidylog)
 
 pars <- orderly_parameters(debug = TRUE)
 
-if (pars[["debug"]]) iter <- 10 else iter <- 4000
+if (pars[["debug"]]) iter <- 10 else iter <- 6000
 
 
 orderly_shared_resource(utils.R = "utils.R")
