@@ -21,14 +21,13 @@ theme_manuscript <- function() {
       ## text = element_text(family = "Arial", ),
       plot.title = element_text(size = 14, hjust = 0.5),
       axis.title = element_text(size = 12),
-      axis.title.x = element_blank(),
-      axis.title.y = element_blank(),
       axis.text = element_text(size = 10),
       legend.text = element_text(size = 11),
       legend.position = "bottom",
       legend.title = element_blank(),
       strip.text = element_text(size = 14),
-      panel.grid.major.y = element_line(color = "#00000010")
+      panel.grid.major.y = element_line(color = "#00000010"),
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)
     )
 }
 
