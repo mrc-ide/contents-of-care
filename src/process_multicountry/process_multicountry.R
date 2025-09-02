@@ -112,7 +112,8 @@ multicountry_split <- map(
       out$facility_level_mapping,
       ref = "Primary"
     )
-
+    out$consult_length <- exp(out$log_consult_length)
+    out <- select(out, -log_consult_length)
     out <- na.omit(out)
     
     out
