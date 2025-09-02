@@ -32,7 +32,7 @@ fits <- walk2(multicountry_split, outfiles, function(x, outfile) {
   fit <- brm(
     formula = bf(consult_length ~ . - country + (1 | country)),
     data = x,
-    family = gaussian(link = "log"),
+    family = lognormal(),
     drop_unused_levels = TRUE,
     chains = 4,
     cores = 4,
