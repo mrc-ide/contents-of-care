@@ -9,13 +9,13 @@ library(snakecase)
 library(tidyr)
 library(tidylog)
 
-
-
-
 orderly_dependency("process_benin", "latest", files = c("benin_split.rds"))
 
 orderly_dependency("process_drc", "latest", files = c("drc_baseline_split.rds"))
-orderly_dependency("process_drc_endline", "latest", files = c("drc_endline_split.rds"))
+orderly_dependency(
+  "process_drc_endline", "latest",
+  files = c("drc_endline_split.rds")
+)
 
 orderly_dependency(
   "process_burkina_faso", "latest", files = c("bfa_baseline_split.rds")
@@ -36,12 +36,14 @@ bfa_endline_split <- readRDS("bfa_endline_split.rds")
 
 drc_baseline_split <- map(drc_baseline_split, function(x) {
   x$country <- "DRC (2015)"
+  x <- rename(x, "consult_length" = "consult_length_calc")
   x
 })
 
 
 drc_endline_split <- map(drc_endline_split, function(x) {
   x$country <- "DRC (2021)"
+  x <- rename(x, "consult_length" = "consult_length_calc")
   x
 })
 
@@ -112,8 +114,7 @@ multicountry_split <- map(
       out$facility_level_mapping,
       ref = "Primary"
     )
-    out$consult_length <- exp(out$log_consult_length)
-    out <- select(out, -log_consult_length)
+
     out <- na.omit(out)
     
     out
@@ -126,4 +127,48 @@ saveRDS(multicountry_split, "multicountry_split.rds")
 orderly_artefact(
   files = "multicountry_split.rds",
   description = "Combined cleaned datasets from all countries"
+)
+
+
+
+multicountry_split <- map(
+  names(bfa_baseline_split), function(stratum) {
+
+    drc_b <- drc_baseline_split[[stratum]]
+    bfa_b <- bfa_baseline_split[[stratum]]
+    bfa_e <- bfa_endline_split[[stratum]]
+
+    common_cols <- Reduce(
+      intersect,
+      list(colnames(drc_b), colnames(bfa_b), colnames(bfa_e))
+    )
+    cli_inform("Common columns for {stratum} are: {common_cols}")
+    out <- bind_rows(
+      select(drc_b, all_of(common_cols)),
+      select(bfa_b, all_of(common_cols)),
+      select(bfa_e, all_of(common_cols))
+    )
+    out$hcw_qualification <- factor(out$hcw_qualification)
+    out$hcw_qualification <- relevel(
+      out$hcw_qualification,
+      ref = "Midwife"
+    )
+
+    out$facility_level_mapping <- factor(out$facility_level_mapping)
+    out$facility_level_mapping <- relevel(
+      out$facility_level_mapping,
+      ref = "Primary"
+    )
+    out <- na.omit(out)
+    
+    out
+  }
+)
+
+names(multicountry_split) <- names(bfa_baseline_split)
+saveRDS(multicountry_split, "drc_and_bfa_split.rds")
+
+orderly_artefact(
+  files = "drc_and_bfa_split.rds",
+  description = "Combined cleaned datasets from DRC and Burkina Faso only"
 )

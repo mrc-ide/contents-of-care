@@ -1,10 +1,14 @@
 library(brms)
+library(cli)
 library(dplyr)
+library(emmeans)
 library(ggplot2)
 library(orderly2)
 library(performance)
 library(posterior)
 library(purrr)
+library(snakecase)
+library(stringr)
 library(tibble)
 library(tidyr)
 
@@ -12,11 +16,14 @@ orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
 orderly_dependency(
-  "lm_multicountry", "latest", "multicountry_fits.rds"
+  "lm_multicountry", "latest", "fits/"
 )
 
+infiles <- list.files("fits", full.names = TRUE)
 
-fits <- readRDS("multicountry_fits.rds")
+fits <- map(infiles, readRDS)
+names(fits) <- str_remove(infiles, "fits/") |> str_remove(".rds")
+
 
 fixed_effects <- map_dfr(fits, function(fit) {
   x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
@@ -36,12 +43,46 @@ orderly_artefact(
 
 x <- filter(fixed_effects, !rowname %in% "Intercept")
 
+dodge_width <- 0.2
+
+dir.create("figures", showWarnings = FALSE)
+
+split(x, x$rowname) |>
+  iwalk(function(y, name) {
+    p <- ggplot(y) +
+      geom_vline(xintercept = 0, linetype = "dashed") +
+      geom_point(
+        aes(y = trimester, x = Q50, col = anc),
+        position = position_dodge(width = dodge_width)
+      ) +
+      geom_errorbarh(
+        aes(y = trimester, xmin = `Q2.5`, xmax = `Q97.5`, col = anc),
+        height = 0, 
+        position = position_dodge(width = dodge_width)
+      ) +
+      theme_manuscript() +
+      ylab("") +
+      xlab("Coefficient estimate (log scale)") +
+      ggtitle(to_title_case(name))
+
+    ggsave_manuscript(
+      p,
+      file = paste0("figures/", name),
+      width = 12, height = 8
+    )
+    
+  })
+ 
+
+
+
 breaks <- c(
   "milieu_of_residenceUrban",
   "milieu_of_residenceUnknown",
-  "facility_typeSecondary",
-  "facility_typeOther",
-  "doctor_or_nursing_and_midwifery_per_10000_scaled",
+  "facility_level_mappingSecondary",
+  "facility_level_mappingTertiary",
+  "facility_level_mappingOther",
+  "doctor_or_nursing_and_midwifery_scaled",
   "hcw_sexMale",
   "hcw_sexUnknown",
   "hcw_qualificationDoctor",
@@ -57,7 +98,8 @@ x$rowname <- factor(x$rowname, levels = breaks, ordered = TRUE)
 labels <- c(    
   "Urban",  
   "Unknown",
-  "Secondary healthcare",
+  "Secondary HF",
+  "Tertiary HF",
   "Other facility type",
   "Doctor/N&M per 10,000",
   "HCW:Male",
