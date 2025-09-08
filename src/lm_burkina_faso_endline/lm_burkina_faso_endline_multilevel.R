@@ -10,7 +10,7 @@ fits <- map(bfa_split, function(x) {
   x <- select(x, -names(insuff_levels))
   x <- na.omit(x)
   brm(
-    formula = consult_length ~ . -region_name + (1 | region_name)),
+    formula = bf(consult_length ~ . -region_name + (1 | region_name)),
     data = x,
     family = lognormal(),
     drop_unused_levels = TRUE,
