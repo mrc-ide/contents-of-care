@@ -22,7 +22,7 @@ source("utils.R")
 
 pars <- orderly_parameters(debug = TRUE)
 
-if (pars[["debug"]]) iter <- 10 else iter <- 4000
+if (pars[["debug"]]) iter <- 10 else iter <- 8000
 
 
 orderly_dependency("process_drc", "latest", "drc_baseline_split.rds")
