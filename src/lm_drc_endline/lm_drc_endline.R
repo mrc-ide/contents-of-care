@@ -18,7 +18,6 @@ orderly_shared_resource("utils.R")
 source("utils.R")
 
 pars <- orderly_parameters(debug = TRUE)
-
 if (pars[["debug"]]) iter <- 10 else iter <- 4000
 
 
