@@ -62,6 +62,9 @@ drc_endline_dco$milieu_of_residence <- case_when(
   TRUE ~ "Rural"
 )
 
+drc_endline_dco$date_of_visit <- mdy(drc_endline_dco$f3_16)
+drc_endline_dco$day_of_visit <- weekdays(drc_endline_dco$date_of_visit)
+
 ## Is the language of the respondent (f3_17) same as the language
 ## is which consultation was conducted (f3_221)
 drc_endline_dco$languages_aligned <- case_when(
@@ -515,7 +518,8 @@ drc_endline_small <- select(
   hcw_sex, hcw_qualification,
   ## Appointment characteristics
   consultation_language,
-  time_elapsed_since_start_of_day
+  time_elapsed_since_start_of_day,
+  day_of_visit
 )
 
 ## drc_endline_small$first_anc <- factor(
@@ -529,11 +533,6 @@ drc_endline_small <- select(
 drc_endline_small <- mutate_if(
   drc_endline_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
 )
-
-drc_endline_small$log_consult_length <-
-  log(drc_endline_small$consult_length_calc)
-
-drc_endline_small <- select(drc_endline_small, -consult_length_calc)
 
 drc_endline_split <- split(
   drc_endline_small,

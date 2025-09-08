@@ -19,6 +19,9 @@ library(tidyr)
 orderly_shared_resource("utils.R")
 source("utils.R")
 
+pars <- orderly_parameters(debug = TRUE)
+
+if (pars[["debug"]]) iter <- 10 else iter <- 4000
 
 
 orderly_dependency("process_drc_endline", "latest", "drc_endline_split.rds")
@@ -36,7 +39,8 @@ factor_vars <- c(
   "trimester",
   "hcw_sex",
   "hcw_qualification",
-  "consultation_language"
+  "consultation_language",
+  "day_of_visit"
 )
 
 drc_endline_split <- map(drc_endline_split, function(x) {
