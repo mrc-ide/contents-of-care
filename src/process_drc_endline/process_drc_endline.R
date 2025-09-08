@@ -64,6 +64,11 @@ drc_endline_dco$milieu_of_residence <- case_when(
 
 drc_endline_dco$date_of_visit <- mdy(drc_endline_dco$f3_16)
 drc_endline_dco$day_of_visit <- weekdays(drc_endline_dco$date_of_visit)
+drc_endline_dco$day_of_visit <- case_when(
+  drc_endline_dco$day_of_visit %in% c("Saturday", "Sunday") ~ "Weekend",
+  TRUE ~ "Weekday"
+)
+
 
 ## Is the language of the respondent (f3_17) same as the language
 ## is which consultation was conducted (f3_221)

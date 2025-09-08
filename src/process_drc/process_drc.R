@@ -47,6 +47,10 @@ drc_baseline_dco <- rename(
 
 drc_baseline_dco$date_of_visit <- ymd(drc_baseline_dco$date_of_visit)
 drc_baseline_dco$day_of_visit <- weekdays(drc_baseline_dco$date_of_visit)
+drc_baseline_dco$day_of_visit <- case_when(
+  drc_baseline_dco$day_of_visit %in% c("Saturday", "Sunday") ~ "Weekend",
+  TRUE ~ "Weekday"
+)
 
 drc_baseline_dco <- rename(
   drc_baseline_dco,
