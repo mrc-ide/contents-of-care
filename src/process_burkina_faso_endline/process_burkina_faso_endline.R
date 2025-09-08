@@ -243,8 +243,7 @@ bfa_small$patmar_i <- factor(
 
 
 bfa_small <- filter(bfa_small, consult_length != 0)
-bfa_small$log_consult_length <- log(bfa_small$consult_length)
-bfa_small <- select(bfa_small, -consult_length)
+
 
 bfa_small <- mutate_if(
   bfa_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
