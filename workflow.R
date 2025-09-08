@@ -12,10 +12,10 @@ orderly_run("lm_drc_endline")
 
 
 orderly_run("process_burkina_faso")
-orderly_run("lm_burkina_faso_baseline")
+orderly_run("lm_burkina_faso_baseline", parameters = list(debug = FALSE))
 
 orderly_run("process_burkina_faso_endline")
-orderly_run("lm_burkina_faso_endline")
+orderly_run("lm_burkina_faso_endline", parameters = list(debug = FALSE))
 
 orderly_run("process_benin_for_lr")
 
