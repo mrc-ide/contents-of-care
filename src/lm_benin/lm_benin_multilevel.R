@@ -10,13 +10,13 @@ fits <- map(benin_split, function(x) {
   )
   x <- select(x, -names(insuff_levels))
   brm(
-    formula = bf(log_consult_length ~ . - health_zone + (1| health_zone)),
+    formula = bf(consult_length ~ . - health_zone + (1| health_zone)),
     data = x,
-    family = gaussian(),
+    family = lognormal(),
     drop_unused_levels = TRUE,
     chains = 4,
     cores = 4,
-    iter = 4000,
+    iter = iter,
     prior = prior_spec,
     control = list(adapt_delta = 0.99)
   )

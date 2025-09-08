@@ -653,15 +653,6 @@ benin_small <- select(
   all_of(scaled_col_names),
 )
 
-
-
-
-benin_small$log_consult_length <- log(benin_small$consult_length)
-## Drop consult_length to avoid it being included as a covariate
-benin_small <- select(benin_small, -consult_length)
-
-
-
 benin_split <- split(
   benin_small, list(benin_dco$first_anc, benin_dco$trimester),
   sep = "_"
