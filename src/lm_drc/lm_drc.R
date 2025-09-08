@@ -19,6 +19,9 @@ library(tidyr)
 orderly_shared_resource("utils.R")
 source("utils.R")
 
+pars <- orderly_parameters(debug = TRUE)
+
+if (pars[["debug"]]) iter <- 10 else iter <- 4000
 
 
 orderly_dependency("process_drc", "latest", "drc_baseline_split.rds")
@@ -38,7 +41,8 @@ factor_vars <- c(
   "trimester",
   "hcw_sex",
   "hcw_qualification",
-  "consultation_language"
+  "consultation_language",
+  "day_of_visit"
 )
 
 drc_baseline_split <- map(drc_baseline_split, function(x) {
@@ -57,6 +61,8 @@ drc_baseline_split <- map(drc_baseline_split, function(x) {
   x
 })
 
+## Make sure to only retain non-empty splits
+drc_baseline_split <- drc_baseline_split[map_lgl(drc_baseline_split, ~ nrow(.) > 0)]
 
 set.seed(42)
 orderly_resource("lm_drc_multilevel.R")

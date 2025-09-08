@@ -45,6 +45,9 @@ drc_baseline_dco <- rename(
   date_of_visit = f3_00_09
 )
 
+drc_baseline_dco$date_of_visit <- ymd(drc_baseline_dco$date_of_visit)
+drc_baseline_dco$day_of_visit <- weekdays(drc_baseline_dco$date_of_visit)
+
 drc_baseline_dco <- rename(
   drc_baseline_dco,
   num_prev_anc_visits = f3_01_02
@@ -692,6 +695,7 @@ drc_baseline_small <- select(
   ## Appointment characteristics
   consultation_language,
   time_elapsed_since_start_of_day,
+  day_of_visit,
   all_of(scaled_col_names),
 )
 
@@ -706,10 +710,6 @@ drc_baseline_small <- select(
 drc_baseline_small <- mutate_if(
   drc_baseline_small, is.character, ~ ifelse(is.na(.), "Unknown", .)
 )
-drc_baseline_small$log_consult_length <-
-  log(drc_baseline_small$consult_length_calc)
-
-drc_baseline_small <- select(drc_baseline_small, -consult_length_calc)
 
 drc_baseline_small$province <- case_when(
   drc_baseline_small$province %in% "Katanga (comparison)" ~ "Katanga",

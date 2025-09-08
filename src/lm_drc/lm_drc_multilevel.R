@@ -2,13 +2,13 @@ library(brms)
 
 fits <- map(drc_baseline_split, function(x) {
   brm(
-    formula = bf(log_consult_length ~ . -province + (1 | province)),
+    formula = bf(consult_length_calc ~ . -province + (1 | province)),
     data = x,
-    family = gaussian(),
+    family = lognormal(),
     drop_unused_levels = TRUE,
     chains = 4,
     cores = 4,
-    iter = 4000,
+    iter = iter,
     prior = prior_spec,
     control = list(adapt_delta = 0.99)
 )})
