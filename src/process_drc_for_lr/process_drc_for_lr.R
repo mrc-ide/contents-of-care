@@ -23,6 +23,29 @@ drc_endline_dco <- readRDS("drc_dco_2021.rds")
 pars <- orderly_parameters(survey = "baseline")
 drc_dco <- if (pars$survey == "baseline") drc_baseline_dco else drc_endline_dco
 
+
+## scale consult length here
+x <- scale(drc_dco$consult_length)
+drc_dco$consult_length_scaled <- x[, 1]
+
+scaled_attrs <- data.frame(
+  variable = "consult_length",
+  mean = attr(x, "scaled:center"),
+  sd = attr(x, "scaled:scale")
+)
+
+saveRDS(
+  scaled_attrs,
+  file = "drc_dco_scaled_attrs.rds",
+  compress = "xz"
+)
+
+orderly_artefact(
+  files = "drc_consult_len_scaled_attrs.rds",
+  description = "Attributes of scaled variables in Drc DCO"
+)
+
+
 ## Unlike Benin DCO, Questions here have not been broken down by trimester
 drc_split <- split(
   drc_dco, list(drc_dco$trimester, drc_dco$first_anc), sep = "_"
@@ -67,22 +90,21 @@ with_completeness_idx <- map_depth(
     cli_inform("Selecting covariates for {scaled_vars}")
     select(
       df,
-      consult_length = consult_length_calc,
-        province,
-        facility_status_mapping,
-        facility_type = facility_status_mapping,
-        milieu_of_residence,
-        patients_pay_for_consumables,
-        hf_has_fetoscope,
-        ## Patient characteristics
-        pregnancy_in_weeks, first_pregnancy, first_anc,
-        trimester,
-        ## HCW characteristics
-        hcw_sex, hcw_qualification,
-        ## Appointment characteristics
-        consultation_language,
-        time_elapsed_since_start_of_day,
-        steps_taken, steps_total,
+      province,
+      facility_status_mapping,
+      facility_type = facility_status_mapping,
+      milieu_of_residence,
+      patients_pay_for_consumables,
+      hf_has_fetoscope,
+      ## Patient characteristics
+      pregnancy_in_weeks, first_pregnancy, first_anc,
+      trimester,
+      ## HCW characteristics
+      hcw_sex, hcw_qualification,
+      ## Appointment characteristics
+      consultation_language,
+      time_elapsed_since_start_of_day,
+     steps_taken, steps_total,
       all_of(scaled_vars),
       any_of(c("maternal_deaths_last_month", "languages_aligned"))
     )

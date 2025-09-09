@@ -18,8 +18,8 @@ orderly_run("process_burkina_faso_endline")
 orderly_run("lm_burkina_faso_endline", parameters = list(debug = FALSE))
 
 
-orderly_run("lm_multicountry", parameters = list(debug = TRUE, all_countries = TRUE))
-orderly_run("lm_multicountry", parameters = list(debug = TRUE, all_countries = FALSE))
+orderly_run("lm_multicountry", parameters = list(debug = FALSE, all_countries = TRUE))
+orderly_run("lm_multicountry", parameters = list(debug = FALSE, all_countries = FALSE))
 
 orderly_run("process_benin_for_lr")
 

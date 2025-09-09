@@ -23,6 +23,29 @@ bfa_endline_dco <- readRDS("bfa_endline_dco.rds")
 pars <- orderly_parameters(survey = "baseline")
 bfa_dco <- if (pars$survey == "baseline") bfa_baseline_dco else bfa_endline_dco
 
+
+## scale consult length here
+x <- scale(bfa_dco$consult_length_calc)
+bfa_dco$consult_length_scaled <- x[, 1]
+
+scaled_attrs <- data.frame(
+  variable = "consult_length",
+  mean = attr(x, "scaled:center"),
+  sd = attr(x, "scaled:scale")
+)
+
+saveRDS(
+  scaled_attrs,
+  file = "bfa_dco_scaled_attrs.rds",
+  compress = "xz"
+)
+
+orderly_artefact(
+  files = "bfa_consult_len_scaled_attrs.rds",
+  description = "Attributes of scaled variables in Bfa DCO"
+)
+
+
 ## Unlike Benin DCO, Questions here have not been broken down by trimester
 bfa_split <- split(
   bfa_dco, list(bfa_dco$trimester, bfa_dco$first_anc), sep = "_"
@@ -67,7 +90,6 @@ with_completeness_idx <- map_depth(
     cli_inform("Selecting covariates for {scaled_vars}")
     select(
       df,
-      consult_length = consult_length_calc,
       ## HF attributes
       region_name,
       milieu_of_residence = milieu_of_residence.x,
