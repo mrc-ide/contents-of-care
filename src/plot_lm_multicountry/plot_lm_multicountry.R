@@ -25,6 +25,9 @@ fits <- map(infiles, readRDS)
 names(fits) <- str_remove(infiles, "fits/") |> str_remove(".rds")
 
 
+## Marginal means
+
+
 fixed_effects <- map_dfr(fits, function(fit) {
   x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
   rownames_to_column(x)

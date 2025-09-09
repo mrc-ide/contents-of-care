@@ -177,12 +177,10 @@ drc_endline_dco$consult_length_calc <-
   round(0)
 
 
- drc_endline_dco$time_elapsed_since_start_of_day <-
-  as.numeric(difftime(
-    drc_endline_dco$start_time_of_consultation,
-    start_of_day, 
-    units = "mins"
-  )) |> round(0)
+ drc_endline_dco$time_elapsed_since_start_of_day <- as.numeric(
+   as.period(drc_endline_dco$start_time_of_consultation) - start_of_day,
+   units = "hours"
+ ) 
 
 drc_endline_dco <- rename(
   drc_endline_dco,
