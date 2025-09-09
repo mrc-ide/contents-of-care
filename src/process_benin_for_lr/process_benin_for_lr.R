@@ -31,7 +31,7 @@ scaled_attrs <- data.frame(
 
 saveRDS(
   scaled_attrs,
-  file = "benin_dco_scaled_attrs.rds",
+  file = "benin_consult_len_scaled_attrs.rds",
   compress = "xz"
 )
 

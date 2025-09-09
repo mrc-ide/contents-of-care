@@ -34,14 +34,15 @@ scaled_attrs <- data.frame(
   sd = attr(x, "scaled:scale")
 )
 
+outfile <- "bfa_consult_len_scaled_attrs.rds"
 saveRDS(
   scaled_attrs,
-  file = "bfa_dco_scaled_attrs.rds",
+  file = outfile,
   compress = "xz"
 )
 
 orderly_artefact(
-  files = "bfa_consult_len_scaled_attrs.rds",
+  files = outfile,
   description = "Attributes of scaled variables in Bfa DCO"
 )
 

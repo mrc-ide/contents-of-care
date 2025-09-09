@@ -161,7 +161,7 @@ multicountry_split <- map(
      drc_b <- pluck(drc_baseline_split, intv_type, stratum, .default = NULL)
      drc_e <- pluck(drc_endline_split, intv_type, stratum, .default = NULL)
      bfa_b <- pluck(bfa_baseline_split, intv_type, stratum, .default = NULL)
-      bfa_e <- pluck(bfa_endline_split, intv_type, stratum, .default = NULL)
+     bfa_e <- pluck(bfa_endline_split, intv_type, stratum, .default = NULL)
       
      datasets <- compact(list(benin, drc_b, drc_e, bfa_b, bfa_e))
 
