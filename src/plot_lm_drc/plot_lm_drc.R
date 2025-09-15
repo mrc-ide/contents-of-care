@@ -1,5 +1,6 @@
 library(brms)
 library(dplyr)
+library(emmeans)
 library(glue)
 library(ggplot2)
 library(orderly2)
@@ -13,8 +14,24 @@ library(tidyr)
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
+pars <- orderly_parameters(survey = "baseline")
+
+
 orderly_dependency("lm_drc", "latest", files = c("drc_fits.rds"))
-fits <- readRDS("drc_fits.rds")
+orderly_dependency(
+  "lm_drc_endline", "latest",
+  files = c("drc_endline_fits.rds")
+)
+baseline_fits <- readRDS("drc_fits.rds")
+endline_fits <- readRDS("drc_endline_fits.rds")
+
+if (pars$survey == "baseline") {
+  fits <- baseline_fits
+} else {
+  fits <- endline_fits
+}
+
+
 
 fixed_effects <- map_dfr(fits, function(fit) {
   x <- as.data.frame(fixef(fit, probs = c(0.025, 0.5, 0.975)))
@@ -32,112 +49,6 @@ orderly_artefact(
   description = "Fixed effects for DRC 2015 DCO model fits"
 )
 
-x <- filter(fixed_effects, !rowname %in% "Intercept")
-
-
-breaks <- c(
-  "provinceEcuador",
-  "provinceKatanga",
-  "provinceManiema",
-  "provinceNorthKivu",
-  "provinceSouthKivu",   
-
-  "milieu_of_residenceUrban",
-
-  "facility_status_mappingPublic",
-  "facility_typeHospital",
-
-  "doctor_or_nursing_and_midwifery_per_10000",  
-  "total_attendance_last_month",
-  "pregnant_women_last_month",
-  "maternal_deaths_last_month",
-
-  "patients_pay_for_consumablesYes",
-  "patients_pay_for_consumablesUnknown",
-
-  "hf_has_fetoscopeYes",
-  "hf_has_fetoscopeUnknown",
-
-  "pregnancy_in_weeks",
-  "first_pregnancyNo",
-
-  "hcw_sexMale",
-  "hcw_sexUnknown",   
-
-  "hcw_qualificationMidwifeDObstetrician",  
-  "hcw_qualificationNurse",
-  "hcw_qualificationOther",
-  "hcw_qualificationUnknown",
-
-  "consultation_languageOther",  
-  "consultation_languageUnknown",
-  "consultation_languageSwahili",  
-  "consultation_languageLingala",
-
-  "time_elapsed_since_start_of_day"
-)
-
-x$rowname <- factor(x$rowname, levels = breaks, ordered = TRUE)
-
-labels <- c(
-  "Ecuador",
-  "Katanga",
-  "Maniema",
-  "NorthKivu",
-  "SouthKivu",
-  
-  "Urban",
-
-  "Public",
-  "Hospital",
-  "Doctor/N&M per 10000",
-  "Total attendance last_month",
-  "Pregnant womrn last month",
-  "Maternal deaths last month",
-  "Patients pay for consumables:Yes",
-  "Patients pay for consumables:Unknown",
-  "Fetoscope:Yes",
-  "Fetoscope:Unknown",
-  "Pregnancy in weeks",
-  "First pregnancy:No",
-  
-  "HCW sex:Male",
-  "HCW sex:Unknown",
-  
-  "Midwife/Obstetrician",
-  "Nurse",
-  "Other",
-  "Qualification:Unknown",
-
-  "Consultation language:Swahili",
-  "Consultation language:Lingala",  
-  "Consultation language:Other",
-  "Consultation language:Unknown",
-
-  "Hours since 6AM"
-)
-
-
-p <- ggplot() +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  geom_point(data = x, aes(y = rowname, x = Q50)) +
-  geom_errorbarh(
-    data = x,
-    aes(y = rowname, xmin = `Q2.5`, xmax = `Q97.5`),
-    height = 0
-  ) +
-  theme_manuscript() 
-
-
-p <- p + scale_y_discrete(breaks = breaks, labels = labels)
-
-p <- my_facets(p)
-
-ggsave_manuscript(
-  p,
-  file = "drc_dco_bayes_fixed_effects",
-  width = 12, height = 8
-)
 
 ## Random effects
 ran_effects <- map_dfr(fits, function(fit) {
@@ -211,10 +122,6 @@ orderly_artefact(
 
 
 coeffs_gt_0 <- filter(coeffs_gt_0, !rowname %in% "Intercept")
-coeffs_gt_0$rowname <- factor(
-  coeffs_gt_0$rowname,
-  levels = breaks, ordered = TRUE
-)
 
 p <- ggplot(coeffs_gt_0) +
   geom_tile(

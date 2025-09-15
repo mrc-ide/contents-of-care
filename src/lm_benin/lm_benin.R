@@ -21,7 +21,7 @@ library(tidyr)
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
-pars <- orderly_parameters(debug = TRUE)
+pars <- orderly_parameters(debug = TRUE, sample_prior = "no")
 if (pars[["debug"]]) iter <- 10 else iter <- 8000
 
 orderly_dependency("process_benin", "latest", files = c("benin_split.rds"))

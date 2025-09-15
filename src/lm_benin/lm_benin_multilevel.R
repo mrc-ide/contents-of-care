@@ -17,6 +17,7 @@ fits <- map(benin_split, function(x) {
     chains = 4,
     cores = 4,
     iter = iter,
+    sample_prior = pars[["sample_prior"]],
     prior = prior_spec,
     control = list(adapt_delta = 0.99)
   )
@@ -25,7 +26,7 @@ fits <- map(benin_split, function(x) {
 saveRDS(fits, file = "benin_dco_fits.rds")
 orderly_artefact(
   files = "benin_dco_fits.rds",
-  description = "DRC 2015 DCO model fits"
+  description = "Benin 2015 DCO model fits"
 )
 
 

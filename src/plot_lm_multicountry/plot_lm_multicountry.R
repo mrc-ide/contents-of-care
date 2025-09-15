@@ -22,10 +22,151 @@ orderly_dependency(
 infiles <- list.files("fits", full.names = TRUE)
 
 fits <- map(infiles, readRDS)
-names(fits) <- str_remove(infiles, "fits/") |> str_remove(".rds")
+names(fits) <- str_remove(infiles, "fits/") |>
+  str_remove("_multicountry_fit.rds") 
 
 
 ## Marginal means
+mm_doctor_and_nm <- map_dfr(fits, function(fit) {
+
+  z_grid <- seq(-0.5, 2, by = 0.5)
+  emm <- emmeans(
+    fit,
+    ~doctor_or_nursing_and_midwifery_scaled|country, 
+    at = list(doctor_or_nursing_and_midwifery_scaled = z_grid), 
+    re_formula = NULL, type = "link", frequentist = FALSE,
+    weights = "proportional" ,
+    epred = TRUE
+   )
+   summary(emm, link = "log", predict.type = "response")
+   
+}, .id = "datacut")
+
+out <- separate(
+  mm_doctor_and_nm, datacut,
+  into = c("anc", "trimester"), sep = "_"
+)
+
+
+## Now we need to translate the scaled covariate to its original scale
+orderly_dependency("process_benin", "latest", "benin_scaled_vars_attrs.rds")
+benin_scaled_vars_attrs <- readRDS("benin_scaled_vars_attrs.rds")
+benin_mu <-
+  filter(benin_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
+  pull(mean)
+
+benin_sd <-
+  filter(benin_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
+  pull(sd)
+
+orderly_dependency("process_drc", "latest", "drc_hf_scaled_attrs.rds")
+drc_scaled_vars_attrs <- readRDS("drc_hf_scaled_attrs.rds")
+
+drc_mu <-
+  filter(drc_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
+  pull(mean)
+
+drc_sd <-
+  filter(drc_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
+  pull(sd)
+
+orderly_dependency("process_burkina_faso", "latest", "bfa_hf_scaled_attrs.rds")
+bfa_scaled_vars_attrs <- readRDS("bfa_hf_scaled_attrs.rds")
+
+bfa_mu <-
+  filter(bfa_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
+  pull(mean)
+
+bfa_sd <-
+  filter(bfa_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
+  pull(sd)
+
+
+out$original_var <- case_when(
+  out$country %in% "Benin (2010)" ~
+    out$doctor_or_nursing_and_midwifery_scaled * benin_sd + benin_mu,
+  out$country %in% c("Burkina Faso (2013)", "Burkina Faso (2017)") ~
+    out$doctor_or_nursing_and_midwifery_scaled * bfa_sd + bfa_mu,
+  out$country %in% c("DRC (2015)", "DRC (2021)") ~
+    out$doctor_or_nursing_and_midwifery_scaled * drc_sd + drc_mu
+)
+
+
+p <- ggplot(out) +
+  geom_line(
+    aes(x = original_var, y = emmean, col = country)
+  ) + geom_ribbon(
+    aes(
+      x = original_var, ymin = lower.HPD, ymax = upper.HPD, fill = country
+    ), width = 0, alpha = 0.2
+  ) +
+  facet_grid(anc ~ trimester) +
+  theme_manuscript() +
+  ylab("ANC contact length") +
+  xlab("Doctors and N&M per 10,000 population (scaled)")
+
+
+ggsave_manuscript(
+  p,
+  file = "figures/mm_doctor_and_nm",
+  width = 12, height = 8
+)
+
+
+
+mm_time_elapsed <- map_dfr(fits, function(fit) {
+  
+  z_grid <- seq(-5, 9, by = 1)
+  emm_ctry <- emmeans(
+    fit,
+    ~time_elapsed_since_start_of_day,
+    at = list(time_elapsed_since_start_of_day = z_grid),
+    re_formula = NULL,
+    weights = "proportional", epred = TRUE
+  )
+
+  summary(emm_ctry, link = "log", predict.type = "response")
+}, .id = "datacut")
+
+out <- separate(
+  mm_time_elapsed, datacut,
+  into = c("anc", "trimester"), sep = "_"
+)
+
+out$label <- case_when(
+  out$time_elapsed_since_start_of_day + 6 <= 12 ~
+    paste0(out$time_elapsed_since_start_of_day + 6, "AM"),
+  TRUE ~ paste0(out$time_elapsed_since_start_of_day - 12, "PM")
+)
+
+p <- ggplot(out) +
+  geom_point(
+    aes(
+      x = time_elapsed_since_start_of_day,
+      y = emmean
+    )
+  ) +
+  geom_errorbar(
+    aes(
+      x = time_elapsed_since_start_of_day,
+      ymin = lower.HPD, ymax = upper.HPD
+    ),
+    width = 0
+  ) +
+  facet_grid(anc ~ trimester) +
+  scale_x_continuous(
+    breaks = seq(-5, 9, by = 3)
+  ) +
+  theme_manuscript() +
+  ylab("ANC contact length") +
+  xlab("Hours since 6AM")
+
+
+ggsave_manuscript(
+  p,
+  file = "figures/mm_time_elapsed",
+  width = 12, height = 8
+)
 
 
 fixed_effects <- map_dfr(fits, function(fit) {

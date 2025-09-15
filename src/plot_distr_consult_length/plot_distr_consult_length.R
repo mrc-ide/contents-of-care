@@ -22,6 +22,12 @@ orderly_dependency(
 )
 
 orderly_dependency(
+  "process_drc_endline", "latest",
+  c("drc_dco_2021.rds" = "drc_dco_2015.rds")
+)
+
+
+orderly_dependency(
   "process_burkina_faso", "latest", "bfa_baseline_dco.rds"
 )
 
@@ -31,16 +37,19 @@ orderly_dependency(
 
 benin <- readRDS("benin_dco.rds")
 drc <- readRDS("drc_dco_2015.rds")
+drc_2021 <- readRDS("drc_dco_2021.rds")
 bfa_baseline <- readRDS("bfa_baseline_dco.rds")
 bfa_endline <- readRDS("bfa_endline_dco.rds")
 
 consult_len <- bind_rows(
-  Benin = select(benin, consult_length, anc = first_anc, trimester),
-  DRC =
+  `Benin (2010)` = select(benin, consult_length, anc = first_anc, trimester),
+  `DRC (2015)` =
     select(drc, consult_length = consult_length_calc, anc = first_anc, trimester),
-  `Burkina Faso (Baseline)` =
+  `DRC (2021)` =
+    select(drc_2021, consult_length = consult_length_calc, anc = first_anc, trimester),  
+  `BFA (2013)` =
     select(bfa_baseline, consult_length = consult_length_calc, anc = first_anc, trimester),
-  `Burkina Faso (Endline)` =
+  `BFA (2017)` =
     select(bfa_endline, consult_length = consult_length_calc, anc = first_anc, trimester),
   .id = "country"
 )
@@ -60,18 +69,21 @@ consult_len_summary$label <- glue(
 )
 
 p <- ggplot(consult_len) +
-  geom_half_violin(    
-    aes(x = country, y = consult_length, fill = country), side = "r",
+  geom_half_violin(
+    aes(x = country, y = consult_length, fill = country),
+    side = "r",
     draw_quantiles = c(0.25, 0.5, 0.75), alpha = 0.5
   ) +
   geom_half_point(
-    aes(x = country, y = consult_length, col = country), side = "l", alpha = 0.5
+    aes(x = country, y = consult_length, col = country),
+    side = "l", alpha = 0.5
   ) +
   scale_y_continuous(
     name = "Consultation length (minutes)",
     breaks = seq(0, 300, 60)
   ) +
   theme_manuscript() +
+  theme(axis.title.x = element_blank()) +
   ylab("Consultation length (minutes)") 
 
 out <- select(consult_len_summary, Country = country, `Median (IQR)` = label)
@@ -87,6 +99,56 @@ ggsave_manuscript(
   "figures/consultation_length_by_country", p1, width = 12, height = 8
 )
 
+
+consult_len <- na.omit(consult_len)
+
+p <- ggplot(consult_len) +
+  geom_half_violin(
+    aes(x = country, y = consult_length, fill = trimester),
+    side = "r",
+    draw_quantiles = c(0.25, 0.5, 0.75), alpha = 0.5
+  ) +
+  geom_half_point(
+    aes(x = country, y = consult_length, col = trimester),
+    side = "l", alpha = 0.5
+  ) +
+  scale_y_continuous(
+    name = "Consultation length (minutes)",
+    breaks = seq(0, 300, 60)
+  ) +
+  theme_manuscript() +
+  theme(axis.title.x = element_blank()) +
+  ylab("Consultation length (minutes)")
+
+ggsave_manuscript(
+  "figures/consultation_length_by_trimester", p,
+  width = 12, height = 8
+)
+
+
+p <- ggplot(consult_len) +
+  geom_half_violin(
+    aes(x = country, y = consult_length, fill = anc),
+    side = "r",
+    draw_quantiles = c(0.25, 0.5, 0.75), alpha = 0.5
+  ) +
+  geom_half_point(
+    aes(x = country, y = consult_length, col = anc),
+    side = "l", alpha = 0.5
+  ) +
+  scale_y_continuous(
+    name = "Consultation length (minutes)",
+    breaks = seq(0, 70, 10),
+    limits = c(0, 70)
+  ) +
+  theme_manuscript() +
+  theme(axis.title.x = element_blank()) +
+  ylab("Consultation length (minutes)")
+
+ggsave_manuscript(
+  "figures/consultation_length_by_anc", p,
+  width = 12, height = 8
+)
 
 
 signf_level <- 0.01

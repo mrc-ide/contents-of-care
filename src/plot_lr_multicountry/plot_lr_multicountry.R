@@ -26,7 +26,8 @@ anc_types <- c("first_anc", "follow_up_anc")
 marginal_preds <- imap_dfr(fits, function(fit, infile) {
   cli_inform("Processing {infile}")
   preds <- emmeans(
-    fit, ~consult_length, at = list(consult_length = seq(1, 150, 10)),
+    fit, ~consult_length_scaled,
+    at = list(consult_length_scaled = seq(-5, 5, 1)),
     type = "response"
   ) |> confint()
 
@@ -55,14 +56,10 @@ marginal_preds$anc <- recode_factor(
 )
 
 p <- ggplot(marginal_preds) +
-  geom_line(aes(x = consult_length, y = prob, col = anc)) +
+  geom_line(aes(x = consult_length_scaled, y = prob, col = anc)) +
   geom_ribbon(
-    aes(x = consult_length, ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc),
+    aes(x = consult_length_scaled, ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc),
     alpha = 0.2
-  ) +
-  scale_x_continuous(
-    breaks = seq(0, 150, 60),
-    labels = seq(0, 150, 60)
   ) +
   facet_grid(
     intervention ~ trimester,
@@ -80,7 +77,7 @@ p <- ggplot(marginal_preds) +
   theme_manuscript()
 p <- p +
   ylab("Proportion of completed steps") +
-  xlab("Consultation length (minutes)") 
+  xlab("Consultation length (scaled)") 
 
 outfile <- "figures/marginal_consult_length"
 
@@ -156,13 +153,7 @@ ggsave_manuscript(outfile, p, width = 12, height = 8)
 
 
 ### 3. Time elapsed
-breaks <- seq(-60, 1020, 60)
-labels <- seq(5, along.with = breaks)
-
-labels <- case_when(
-  labels < 12 ~ paste0(labels, "AM"),
-  labels >= 12 ~ paste0(labels - 12, "PM"),
-)
+breaks <- seq(-6, 6, 1)
 
 
 marginal_preds <- imap_dfr(fits, function(fit, infile) {
@@ -206,9 +197,6 @@ p <- ggplot(marginal_preds) +
     ),
     alpha = 0.2
   ) +
-  scale_x_continuous(
-    breaks = breaks[seq(1, length(breaks), 4)],
-    labels = labels[seq(1, length(breaks), 4)]) +
   facet_grid(
     intervention ~ trimester,
     labeller = labeller(
@@ -225,7 +213,7 @@ p <- ggplot(marginal_preds) +
   theme_manuscript()
 p <- p +
   ylab("Proportion of completed steps") +
-  xlab("") 
+  xlab("Hours since 6AM") 
 
 outfile <- "figures/marginal_time_elapsed_since_start_of_day"
 
