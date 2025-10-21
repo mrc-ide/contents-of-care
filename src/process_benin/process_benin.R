@@ -215,17 +215,17 @@ facility_survey_cl <- rename(
   catchment_pop_under_1 = f1_3,
   catchment_pop_under_5 = f1_4,
   total_attendance_last_year = f1_5,
-  new_patients_2009 = f1_6,
-  new_female_patients_2009 = f1_7,
-  new_pregnant_patients_2009 = f1_8,
-  new_patients_under_5_2009 = f1_9,
+  new_patients_last_year = f1_6,
+  new_female_patients_last_year = f1_7,
+  new_pregnant_patients_last_year = f1_8,
+  new_patients_under_5_last_year = f1_9,
   vaccinations_provided = f2_1,
   vaccinations_room = f2_2,
   vaccinations_children_regulary = f2_3,
-  vaccinations_workplan_2009 = f2_4,
+  vaccinations_workplan_last_year = f2_4,
   ## Section 3 is maternal health management
   anc_offered = f3_1,
-  anc_visits_2009 = f3_2,
+  anc_visits_last_year = f3_2,
   ## How many women had their first prenatal visit before the end of the first trimester?
   number_first_anc_before_first_trimester = f3_3,
   number_at_least_4_anc = f3_4,
@@ -320,7 +320,7 @@ facility_survey_cl <- rename(
 cols_to_scale <- c(
   "total_attendance_last_year",
   ## "new_patients_2009", <- Exclude because 56 NAs
-  "anc_visits_2009",
+  "anc_visits_last_year",
   "total_births_last_year",
   "number_of_beds_for_delivery"
   ## Exclude number_of_women_referred_to_hf because of 170 NAs
@@ -333,22 +333,11 @@ facility_survey_cl <- mutate(
   facility_survey_cl,
   across(
     all_of(cols_to_scale),
-    ~ scale(.)[, 1],
+    ~ scale(., center = FALSE, scale = FALSE)[, 1],
     .names = "{.col}_scaled"
   )
 )
 
-scaled_attrs <- map_dfr(
-  cols_to_scale,
-  function(col) {
-    x <- scale(facility_survey_cl[[col]])
-    data.frame(
-      variable = col,
-      mean = attr(x, "scaled:center"),
-      sd = attr(x, "scaled:scale")
-    )
-  }
-)
 
 
 
@@ -520,24 +509,10 @@ z$doctor_or_nursing_and_midwifery_per_10000 <-
 scaled_col_names <-
   c(scaled_col_names, "doctor_or_nursing_and_midwifery_scaled")
 
-tmp <- scale(z$doctor_or_nursing_and_midwifery)
+tmp <- scale(z$doctor_or_nursing_and_midwifery, center = FALSE, scale = FALSE)
 z$doctor_or_nursing_and_midwifery_scaled <- tmp[, 1]
   
 
-scaled_attrs <- bind_rows(
-  scaled_attrs,
-  data.frame(
-    variable = "doctor_or_nursing_and_midwifery",
-    mean = attr(tmp, "scaled:center"),
-    sd = attr(tmp, "scaled:scale")
-  )
-)
-
-saveRDS(scaled_attrs, "benin_scaled_vars_attrs.rds")
-orderly_artefact(
-  files = "benin_scaled_vars_attrs.rds",
-  description = "Benin scaled variables attributes"
-)
 
 ## Sense checked the numbers; they roughly make sense, except for facilities
 ## with very small catchment populations. As these are not used in DCOs, I am
