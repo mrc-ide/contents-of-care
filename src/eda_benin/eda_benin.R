@@ -186,7 +186,7 @@ orderly_artefact(
 
 ########### by total attendance in 2009
 p3 <- ggsummarystats(
-  data = benin_dco, x = "total_attendance_2009_binned", y = "consult_length",
+  data = benin_dco, x = "total_attendance_last_year_binned", y = "consult_length",
   ggfunc = ggboxplot, add = "jitter"
 )
 

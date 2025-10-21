@@ -40,7 +40,7 @@ bfa_baseline_dco <- rename(
   consult_start = f3_201,
   consult_end = f3_219,
   consult_length = f3_220,
-  consult_language = f3_221,
+  consultation_language = f3_221,
   ## The following are yes/no questions 1 is yes, 2 is no
   hcw_intro_name = f3_202_a,
   hcw_intro_degree = f3_202_b,
@@ -206,7 +206,7 @@ bfa_hf_survey <- rename(
   midwife_state = f1_305_8,
   midwife_patented = f1_305_13,
   ## In last one year
-  num_maternal_deaths = f1_631,
+  maternal_deaths_last_year = f1_631,
   ## catchment population:
   ## Can you estimate the size of the population that uses this health facility?
   estimate_catchment_population = f1_701, ## 15 people said no
@@ -275,9 +275,9 @@ bfa_hf_survey$facility_type <- case_when(
 
 ## I don't have acccess to the questionnaire but these values feel like code
 ## for NA
-bfa_hf_survey$num_maternal_deaths <- case_when(
-  bfa_hf_survey$num_maternal_deaths %in% c(998, 999, 98, 9994, 860) ~ NA,
-  TRUE ~ bfa_hf_survey$num_maternal_deaths
+bfa_hf_survey$maternal_deaths_last_year <- case_when(
+  bfa_hf_survey$maternal_deaths_last_year %in% c(998, 999, 98, 9994, 860) ~ NA,
+  TRUE ~ bfa_hf_survey$maternal_deaths_last_year
 )
 ## Note: 860 does't look like an error BUT
 ## the value of total_Attendance for this facility is 2
@@ -427,7 +427,7 @@ bfa_small <- select(
   region_name,
   milieu_of_residence = milieu_of_residence.x,
   facility_level_mapping = facility_level_mapping.x,
-  num_maternal_deaths,
+  maternal_deaths_last_year,
   ## patient attributes
   first_anc,
   trimester,
@@ -437,7 +437,7 @@ bfa_small <- select(
   hcw_sex,
   hcw_qualification,
   ## Appointment attributes
-  consult_language,
+  consultation_language,
   time_elapsed_since_start_of_day,
   ## scaled attributes
   all_of(scaled_col_names)

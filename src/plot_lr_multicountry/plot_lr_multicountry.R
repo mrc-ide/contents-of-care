@@ -91,7 +91,7 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
   cli_inform("Processing {infile}")
   preds <- emmeans(
     fit, ~doctor_or_nursing_and_midwifery_scaled,
-    at = list(doctor_or_nursing_and_midwifery_scaled = seq(-0.5, 5, 0.5)),
+    at = list(doctor_or_nursing_and_midwifery_scaled = seq(-2, 2, 0.5)),
     type = "response"
   ) |> confint()
 
@@ -126,9 +126,6 @@ p <- ggplot(marginal_preds) +
         ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc),
     alpha = 0.2
   ) +
-  scale_x_continuous(
-    breaks = seq(-0.5, 5, 1)
-  ) +
   facet_grid(
     intervention ~ trimester,
     labeller = labeller(
@@ -153,7 +150,7 @@ ggsave_manuscript(outfile, p, width = 12, height = 8)
 
 
 ### 3. Time elapsed
-breaks <- seq(-6, 6, 1)
+breaks <- seq(-5, 17, 1)
 
 
 marginal_preds <- imap_dfr(fits, function(fit, infile) {
@@ -197,6 +194,10 @@ p <- ggplot(marginal_preds) +
     ),
     alpha = 0.2
   ) +
+  scale_x_continuous(
+    breaks = c(-5, 0, 6, 12, 17),
+    labels = c("1AM", "6AM", "12PM", "6PM", "11PM")
+  ) +
   facet_grid(
     intervention ~ trimester,
     labeller = labeller(
@@ -213,7 +214,7 @@ p <- ggplot(marginal_preds) +
   theme_manuscript()
 p <- p +
   ylab("Proportion of completed steps") +
-  xlab("Hours since 6AM") 
+  xlab("") 
 
 outfile <- "figures/marginal_time_elapsed_since_start_of_day"
 

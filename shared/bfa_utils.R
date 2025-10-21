@@ -234,13 +234,13 @@ recode_bfa_vars <- function(x) {
     TRUE ~ "Other"
   )
 
-  x$consult_language <- case_when(
-    x$consult_language %in% 1 ~ "French",
-    x$consult_language %in% 2 ~ "Moore",
-    x$consult_language %in% 3 ~ "Dioula",
-    x$consult_language %in% c(4:10) ~ "Other",
-    x$consult_language %in% 97 ~ "Unknown",
-    is.na(x$consult_language) ~"Unknown"
+  x$consultation_language <- case_when(
+    x$consultation_language %in% 1 ~ "French",
+    x$consultation_language %in% 2 ~ "Moore",
+    x$consultation_language %in% 3 ~ "Dioula",
+    x$consultation_language %in% c(4:10) ~ "Other",
+    x$consultation_language %in% 97 ~ "Unknown",
+    is.na(x$consultation_language) ~"Unknown"
   )
 
   x$first_pregnancy <- case_when(

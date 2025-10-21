@@ -186,8 +186,6 @@ benin$hcw_qualification <- case_when(
   TRUE ~ "Other"
 )
 
-
-
 saveRDS(benin, "benin_2010_dco.rds")
 
 ## benin <- rowwise(benin) |> mutate(nsteps = sum(c_across(m0_03:m3_6), na.rm = TRUE))
@@ -216,7 +214,7 @@ facility_survey_cl <- rename(
   catchment_pop_female_15_49 = f1_2,
   catchment_pop_under_1 = f1_3,
   catchment_pop_under_5 = f1_4,
-  total_attendance_2009 = f1_5,
+  total_attendance_last_year = f1_5,
   new_patients_2009 = f1_6,
   new_female_patients_2009 = f1_7,
   new_pregnant_patients_2009 = f1_8,
@@ -306,7 +304,7 @@ facility_survey_cl <- rename(
   number_of_women_referred_to_hf = f3_25,
   avg_length_of_stay_if_complication = f3_29,
   number_of_maternal_deaths = f3_30, ## last 12 months
-  number_of_births_2009 = f3_32,
+  total_births_last_year = f3_32,
   csec_offered = f3_39,
   csec_trained_personnel = f3_40,
   number_csec_trained_personnel = f3_40a,
@@ -320,10 +318,10 @@ facility_survey_cl <- rename(
 ## Scaling should happen here.
 ## Scale continuous variables before splitting
 cols_to_scale <- c(
-  "total_attendance_2009",
+  "total_attendance_last_year",
   ## "new_patients_2009", <- Exclude because 56 NAs
   "anc_visits_2009",
-  "number_of_births_2009",
+  "total_births_last_year",
   "number_of_beds_for_delivery"
   ## Exclude number_of_women_referred_to_hf because of 170 NAs
   ## "number_of_women_referred_to_hf",
@@ -645,7 +643,7 @@ benin_small <- select(
   benin_dco, consult_length,
   milieu_of_residence, health_zone,
   facility_level_mapping,
-  facility_status_mapping,
+  facility_type = facility_status_mapping,
   pregnant_women_private_space,
   hf_has_fetoscope, women_in_labour_pay,
   hcw_qualification, first_anc, trimester,

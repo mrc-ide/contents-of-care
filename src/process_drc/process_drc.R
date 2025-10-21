@@ -65,19 +65,19 @@ drc_baseline_dco$first_anc <- case_when(
 ) 
 
 drc_baseline_dco <- rename(
-  drc_baseline_dco, pregnancy_in_weeks = f3_01_03
+  drc_baseline_dco, pregnancy_week = f3_01_03
 )
 
-drc_baseline_dco$pregnancy_in_weeks <- case_when(
-  drc_baseline_dco$pregnancy_in_weeks %in% c(98, -999999) ~ NA_integer_,
-  TRUE ~ drc_baseline_dco$pregnancy_in_weeks
+drc_baseline_dco$pregnancy_week <- case_when(
+  drc_baseline_dco$pregnancy_week %in% c(98, -999999) ~ NA_integer_,
+  TRUE ~ drc_baseline_dco$pregnancy_week
 )
 
 drc_baseline_dco$trimester <- ifelse(
-  drc_baseline_dco$pregnancy_in_weeks < 13,
+  drc_baseline_dco$pregnancy_week < 13,
   "First Trimester",
    ifelse(
-     drc_baseline_dco$pregnancy_in_weeks < 28,
+     drc_baseline_dco$pregnancy_week < 28,
      "Second Trimester", "Third Trimester"
    )
 )
@@ -397,7 +397,7 @@ drc_baseline_hf$facility_status <- case_when(
 
 drc_baseline_hf$facility_status_mapping  <- case_when(
   drc_baseline_hf$f1_00_04 == 1 ~ "Public",
-  drc_baseline_hf$f1_00_04 != 1 ~ "Other",
+  drc_baseline_hf$f1_00_04 != 1 ~ "Not Public",
   TRUE ~ as.character(drc_baseline_hf$f1_00_04)
 )
 
@@ -526,6 +526,9 @@ drc_baseline_hf$maternal_deaths_last_month <-
     NA_integer_, drc_baseline_hf$maternal_deaths_last_month
   )
 
+drc_baseline_hf$maternal_deaths_last_year <-
+  drc_baseline_hf$maternal_deaths_last_month * 12
+
 drc_baseline_hf$maternal_deaths_audited_last_month <-
   drc_baseline_hf$f1_07_14
 
@@ -632,7 +635,7 @@ drc_baseline_hf$doctor_or_nursing_and_midwifery <-
 cols_to_scale <- c(
   "total_attendance_last_year",
   "total_births_last_year",
-  
+  "maternal_deaths_last_year",
   "pregnant_women_last_year", 
   "doctor_or_nursing_and_midwifery"
 )
@@ -688,11 +691,10 @@ drc_baseline_small <- select(
   facility_type = facility_status_mapping,
   facility_level_mapping,
   milieu_of_residence,
-  maternal_deaths_last_month,
   patients_pay_for_consumables,
   hf_has_fetoscope,
   ## Patient characteristics
-  pregnancy_in_weeks, first_pregnancy, first_anc,
+  pregnancy_week, first_pregnancy, first_anc,
   trimester,
   ## HCW characteristics
   hcw_sex, hcw_qualification,

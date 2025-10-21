@@ -43,7 +43,7 @@ bfa_endline_dco <- rename(
   consult_start = f3_201,
   consult_end = f3_219,
   consult_length = f3_220,
-  consult_language = f3_221,
+  consultation_language = f3_221,
   ## The following are yes/no questions 1 is yes, 2 is no
     ## The following are yes/no questions 1 is yes, 2 is no
   hcw_intro_name = f3_202_a,
@@ -202,7 +202,7 @@ bfa_small <- select(
   region_name,
   milieu_of_residence = milieu_of_residence.x,  
   facility_level_mapping = facility_level_mapping.x,
-  num_maternal_deaths,
+  maternal_deaths_last_year,
   ## patient attributes
   patage_i,
   patlit_i,
@@ -218,7 +218,7 @@ bfa_small <- select(
   hcw_sex,
   hcw_qualification,
   ## Appointment attributes
-  consult_language,
+  consultation_language,
   time_elapsed_since_start_of_day,
   all_of(grep("scaled", colnames(bfa_endline_dco), value = TRUE))
 )

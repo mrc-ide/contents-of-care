@@ -13,17 +13,12 @@ dir.create("figures")
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
-orderly_dependency(
-  "process_benin", "latest", "benin_dco.rds"
-)
+orderly_dependency("process_benin", "latest", "benin_dco.rds")
+
+orderly_dependency("process_drc", "latest", "drc_dco_2015.rds")
 
 orderly_dependency(
-  "process_drc", "latest", "drc_dco_2015.rds"
-)
-
-orderly_dependency(
-  "process_drc_endline", "latest",
-  c("drc_dco_2021.rds" = "drc_dco_2015.rds")
+  "process_drc_endline", "latest", c("drc_dco_2021.rds" = "drc_dco_2015.rds")
 )
 
 

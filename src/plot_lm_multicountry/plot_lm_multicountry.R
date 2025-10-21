@@ -29,10 +29,10 @@ names(fits) <- str_remove(infiles, "fits/") |>
 ## Marginal means
 mm_doctor_and_nm <- map_dfr(fits, function(fit) {
 
-  z_grid <- seq(-0.5, 2, by = 0.5)
+  z_grid <- seq(-2, 2, by = 0.5)
   emm <- emmeans(
     fit,
-    ~doctor_or_nursing_and_midwifery_scaled|country, 
+    ~doctor_or_nursing_and_midwifery_scaled, 
     at = list(doctor_or_nursing_and_midwifery_scaled = z_grid), 
     re_formula = NULL, type = "link", frequentist = FALSE,
     weights = "proportional" ,
@@ -94,10 +94,11 @@ out$original_var <- case_when(
 
 p <- ggplot(out) +
   geom_line(
-    aes(x = original_var, y = emmean, col = country)
+    aes(x = doctor_or_nursing_and_midwifery_scaled, y = emmean)
   ) + geom_ribbon(
     aes(
-      x = original_var, ymin = lower.HPD, ymax = upper.HPD, fill = country
+      x = doctor_or_nursing_and_midwifery_scaled, ymin = lower.HPD,
+      ymax = upper.HPD
     ), width = 0, alpha = 0.2
   ) +
   facet_grid(anc ~ trimester) +
@@ -116,7 +117,7 @@ ggsave_manuscript(
 
 mm_time_elapsed <- map_dfr(fits, function(fit) {
   
-  z_grid <- seq(-5, 9, by = 1)
+  z_grid <- seq(-5, 17, by = 1)
   emm_ctry <- emmeans(
     fit,
     ~time_elapsed_since_start_of_day,
@@ -133,39 +134,34 @@ out <- separate(
   into = c("anc", "trimester"), sep = "_"
 )
 
-out$label <- case_when(
-  out$time_elapsed_since_start_of_day + 6 <= 12 ~
-    paste0(out$time_elapsed_since_start_of_day + 6, "AM"),
-  TRUE ~ paste0(out$time_elapsed_since_start_of_day - 12, "PM")
-)
+
 
 p <- ggplot(out) +
-  geom_point(
+  geom_line(
     aes(
       x = time_elapsed_since_start_of_day,
       y = emmean
     )
   ) +
-  geom_errorbar(
+  geom_ribbon(
     aes(
       x = time_elapsed_since_start_of_day,
       ymin = lower.HPD, ymax = upper.HPD
     ),
-    width = 0
+    alpha = 0.2
   ) +
   facet_grid(anc ~ trimester) +
   scale_x_continuous(
-    breaks = seq(-5, 9, by = 3)
+    breaks = c(-5, 0, 6, 12, 17),
+    labels = c("1AM", "6AM", "12PM", "6PM", "11PM")
   ) +
   theme_manuscript() +
   ylab("ANC contact length") +
-  xlab("Hours since 6AM")
+  xlab("")
 
 
 ggsave_manuscript(
-  p,
-  file = "figures/mm_time_elapsed",
-  width = 12, height = 8
+  p, file = "figures/mm_time_elapsed", width = 12, height = 8
 )
 
 

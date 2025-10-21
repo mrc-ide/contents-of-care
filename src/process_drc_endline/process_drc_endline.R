@@ -101,14 +101,14 @@ drc_endline_dco <- rename(
 
 
 drc_endline_dco <- rename(
-  drc_endline_dco, pregnancy_in_weeks = f3_103
+  drc_endline_dco, pregnancy_week = f3_103
 )
 
 drc_endline_dco$trimester <- ifelse(
-  drc_endline_dco$pregnancy_in_weeks < 13,
+  drc_endline_dco$pregnancy_week < 13,
   "First Trimester",
    ifelse(
-     drc_endline_dco$pregnancy_in_weeks < 28,
+     drc_endline_dco$pregnancy_week < 28,
      "Second Trimester", "Third Trimester"
    )
 )
@@ -515,7 +515,7 @@ drc_endline_small <- select(
   hf_has_fetoscope,
   doctor_or_nursing_and_midwifery_scaled,
   ## Patient characteristics
-  pregnancy_in_weeks, first_pregnancy, first_anc,
+  pregnancy_week, first_pregnancy, first_anc,
   trimester,
   ## HCW characteristics
   hcw_sex, hcw_qualification,

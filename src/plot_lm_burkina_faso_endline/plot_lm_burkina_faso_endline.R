@@ -73,10 +73,10 @@ attribute_of <- list(
   ),
 
   `Appointment` = c(
-    "consult_languageFrench",
-    "consult_languageMoore",
-    "consult_languageOther",
-    "consult_languageUnknown",
+    "consultation_languageFrench",
+    "consultation_languageMoore",
+    "consultation_languageOther",
+    "consultation_languageUnknown",
     "time_elapsed_since_start_of_day"
   )
 )
@@ -125,10 +125,10 @@ breaks <- c(
   "hcw_qualificationNurse",
   "hcw_qualificationOther",
 
-  "consult_languageFrench",
-  "consult_languageMoore",
-  "consult_languageOther",
-  "consult_languageUnknown",
+  "consultation_languageFrench",
+  "consultation_languageMoore",
+  "consultation_languageOther",
+  "consultation_languageUnknown",
   "time_elapsed_since_start_of_day"
 )
 

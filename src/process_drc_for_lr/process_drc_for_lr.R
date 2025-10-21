@@ -98,7 +98,7 @@ with_completeness_idx <- map_depth(
       patients_pay_for_consumables,
       hf_has_fetoscope,
       ## Patient characteristics
-      pregnancy_in_weeks, first_pregnancy, first_anc,
+      pregnancy_week, first_pregnancy, first_anc,
       trimester,
       ## HCW characteristics
       hcw_sex, hcw_qualification,
