@@ -457,23 +457,12 @@ tmp <- left_join(
 tmp$doctor_or_nursing_and_midwifery_per_10000 <-
   (tmp$doctor_or_nursing_and_midwifery / tmp$catchment_pop) * 10000
 
-x <- scale(tmp$doctor_or_nursing_and_midwifery_per_10000)
+x <-
+  scale(tmp$doctor_or_nursing_and_midwifery_per_10000, center = FALSE, scale = FALSE)
 tmp$doctor_or_nursing_and_midwifery_scaled <- x[, 1]
   
 
 
-scaled_attrs <- 
-  data.frame(
-    variable = "doctor_or_nursing_and_midwifery_per_10000",
-    mean = attr(x, "scaled:center"),
-    sd = attr(x, "scaled:scale")
-  )
-  
-saveRDS(scaled_attrs, "drc_endline_hf_scaled_attrs.rds")
-orderly_artefact(
-  files = c("drc_endline_hf_scaled_attrs.rds"),
-  description = "DRC health facility data scaled attributes"
-)
 
 
 ## Put eveything together

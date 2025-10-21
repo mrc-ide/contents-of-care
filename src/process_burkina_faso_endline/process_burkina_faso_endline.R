@@ -170,21 +170,9 @@ bfa_endline_dco <- mutate(
   bfa_endline_dco,
   across(
     all_of(cols_to_scale),
-    ~ scale(.)[, 1],
+    ~ scale(., center = FALSE, scale = FALSE)[, 1],
     .names = "{.col}_scaled"
   )
-)
-
-scaled_attrs <- map_dfr(
-  cols_to_scale,
-  function(col) {
-    x <- scale(bfa_endline_dco[[col]])
-    data.frame(
-      variable = col,
-      mean = attr(x, "scaled:center"),
-      sd = attr(x, "scaled:scale")
-    )
-  }
 )
 
 

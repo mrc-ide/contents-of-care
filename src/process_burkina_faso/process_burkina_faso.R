@@ -157,25 +157,10 @@ bfa_baseline_dco <- mutate(
   bfa_baseline_dco,
   across(
     all_of(cols_to_scale),
-    ~ scale(.)[, 1],
+    ~ scale(., center = FALSE, scale = FALSE)[, 1],
     .names = "{.col}_scaled"
   )
 )
-
-scaled_attrs <- map_dfr(
-  cols_to_scale,
-  function(col) {
-    x <- scale(bfa_baseline_dco[[col]])
-    data.frame(
-      variable = col,
-      mean = attr(x, "scaled:center"),
-      sd = attr(x, "scaled:scale")
-    )
-  }
-)
-
-
-
 
 
 ## Following columns not found in any csv file:
@@ -303,23 +288,11 @@ bfa_hf_survey <- mutate(
   bfa_hf_survey,
   across(
     all_of(cols_to_scale),
-    ~ scale(.)[, 1],
+    ~ scale(., center = FALSE, scale = FALSE)[, 1],
     .names = "{.col}_scaled"
   )
 )
 
-scaled_attrs <- rbind(
-  scaled_attrs,
-  map_dfr(cols_to_scale,
-  function(col) {
-    x <- scale(bfa_hf_survey[[col]])
-    data.frame(
-      variable = col,
-      mean = attr(x, "scaled:center"),
-      sd = attr(x, "scaled:scale")
-    )
-  }
-))
 
 
 
@@ -379,26 +352,9 @@ hcw_count$doctor_or_nursing_and_midwifery_per_10000 <- (
 scaled_col_names <-
   c(scaled_col_names, "doctor_or_nursing_and_midwifery_scaled")
 
-tmp <- scale(hcw_count$doctor_or_nursing_and_midwifery)
+tmp <-
+  scale(hcw_count$doctor_or_nursing_and_midwifery, center = FALSE, scale = FALSE)
 hcw_count$doctor_or_nursing_and_midwifery_scaled <- tmp[, 1]
-
-
-scaled_attrs <- bind_rows(
-  scaled_attrs,
-  data.frame(
-    variable = "doctor_or_nursing_and_midwifery",
-    mean = attr(tmp, "scaled:center"),
-    sd = attr(tmp, "scaled:scale")
-  )
-)
-
-
-saveRDS(scaled_attrs, "bfa_hf_scaled_attrs.rds")
-orderly_artefact(
-  files = c("bfa_hf_scaled_attrs.rds"),
-  description = "BFA health facility data scaled attributes"
-)
-
 
 saveRDS(hcw_count, "bfa_hcw_count.rds")
 orderly_artefact(
