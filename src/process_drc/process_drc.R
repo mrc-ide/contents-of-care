@@ -627,9 +627,15 @@ drc_baseline_hf$doctor_or_nursing_and_midwifery <- rowSums(
   na.rm = TRUE
 )
 
-drc_baseline_hf$doctor_or_nursing_and_midwifery <-
+
+drc_baseline_hf$doctor_or_nursing_and_midwifery_per_10000 <-
   (drc_baseline_hf$doctor_or_nursing_and_midwifery / drc_baseline_hf$catchment_pop) * 10000
 
+## Exclude facilities with 0 staff
+drc_baseline_hf <- filter(
+  drc_baseline_hf,
+  doctor_or_nursing_and_midwifery > 0
+)
 
 ## Scale
 cols_to_scale <- c(
@@ -637,7 +643,7 @@ cols_to_scale <- c(
   "total_births_last_year",
   "maternal_deaths_last_year",
   "pregnant_women_last_year", 
-  "doctor_or_nursing_and_midwifery"
+  "doctor_or_nursing_and_midwifery_per_10000"
 )
 
 scaled_col_names <- paste0(cols_to_scale, "_scaled")
@@ -646,33 +652,23 @@ drc_baseline_hf <- mutate(
   drc_baseline_hf,
   across(
     all_of(cols_to_scale),
-    ~ scale(.)[, 1],
+    ~ scale(., center = FALSE, scale = FALSE)[, 1],
     .names = "{.col}_scaled"
   )
 )
-
-
-
-scaled_attrs <- map_dfr(
-  cols_to_scale,
-  function(col) {
-    x <- scale(drc_baseline_hf[[col]])
-    data.frame(
-      variable = col,
-      mean = attr(x, "scaled:center"),
-      sd = attr(x, "scaled:scale")
-    )
-  }
-)
-
-saveRDS(scaled_attrs, "drc_hf_scaled_attrs.rds")
-orderly_artefact(
-  files = c("drc_hf_scaled_attrs.rds"),
-  description = "DRC health facility data scaled attributes"
-)
+## Rename to be consistent with other datasets::
 
 saveRDS(drc_baseline_hf, "drc_hf_2015.rds")
+drc_baseline_hf <-
+  rename(
+    drc_baseline_hf,
+    doctor_or_nursing_and_midwifery_scaled =
+      doctor_or_nursing_and_midwifery_per_10000_scaled
+  )
 
+scaled_col_names[
+  scaled_col_names == "doctor_or_nursing_and_midwifery_per_10000_scaled"
+] <- "doctor_or_nursing_and_midwifery_scaled"
 ## Combine
 drc_baseline_dco_aug <- left_join(
   drc_baseline_dco, drc_baseline_hf, by = "facility_id"
@@ -738,8 +734,6 @@ map(drc_baseline_split, nrow)
 map(drc_baseline_split, function(x) {
   map(x, ~ sum(is.na(.))) |> keep(~ . > 0)
 })
-
-
 
 
 saveRDS(drc_baseline_split, "drc_baseline_split.rds")

@@ -353,7 +353,7 @@ scaled_col_names <-
   c(scaled_col_names, "doctor_or_nursing_and_midwifery_scaled")
 
 tmp <-
-  scale(hcw_count$doctor_or_nursing_and_midwifery, center = FALSE, scale = FALSE)
+  scale(hcw_count$doctor_or_nursing_and_midwifery_per_10000, center = FALSE, scale = FALSE)
 hcw_count$doctor_or_nursing_and_midwifery_scaled <- tmp[, 1]
 
 saveRDS(hcw_count, "bfa_hcw_count.rds")

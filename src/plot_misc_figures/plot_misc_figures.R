@@ -61,3 +61,7 @@ ggsave_manuscript(
   width = 12,
   height = 8
 )
+
+
+orderly_dependency("process_drc", "latest", "drc_dco_2015_augmented.rds")
+drc_baseline_dco <- readRDS("drc_dco_2015_augmented.rds")

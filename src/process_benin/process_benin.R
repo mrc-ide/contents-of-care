@@ -509,7 +509,7 @@ z$doctor_or_nursing_and_midwifery_per_10000 <-
 scaled_col_names <-
   c(scaled_col_names, "doctor_or_nursing_and_midwifery_scaled")
 
-tmp <- scale(z$doctor_or_nursing_and_midwifery, center = FALSE, scale = FALSE)
+tmp <- scale(z$doctor_or_nursing_and_midwifery_per_10000, center = FALSE, scale = FALSE)
 z$doctor_or_nursing_and_midwifery_scaled <- tmp[, 1]
   
 
