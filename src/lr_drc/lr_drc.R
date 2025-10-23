@@ -21,8 +21,6 @@ pars <- orderly_parameters(survey = "baseline", debug = TRUE)
 
 if (pars[["debug"]]) iter <- 1 else iter <- 4000
 
-
-
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
@@ -33,6 +31,26 @@ orderly_dependency(
 )
 
 drc_split <- readRDS("drc_dco_with_completeness_idx.rds")
+cols_to_scale <- grep("scaled", names(drc_split[[1]][[1]]), value = TRUE)
+x <- map_dfr(drc_split, bind_rows, .id = "intervention")
+
+centers <- sapply(cols_to_scale, \(col) mean(x[[col]], na.rm = TRUE))
+scales <- sapply(cols_to_scale, \(col) sd(x[[col]], na.rm = TRUE))
+
+x <- mutate(x, across(all_of(cols_to_scale), \(v) as.numeric(scale(v))))
+
+scaled_attrs <- data.frame(
+  variable = names(centers), center = unname(centers), scale = unname(scales)
+)
+
+saveRDS(scaled_attrs, file = "scaled_attributes.rds")
+orderly_artefact(
+  files = "scaled_attributes.rds",
+  description = "scaled_attributes"
+)
+
+drc_split <- split(x, x$intervention) |>
+  map(function(y) split(y, list(y$trimester, y$first_anc), sep = "_"))
 
 
 set.seed(42)

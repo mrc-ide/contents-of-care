@@ -12,7 +12,7 @@ library(tidyr)
 
 
 
-##pars <- orderly_parameters(survey = "baseline", debug = TRUE)
+pars <- orderly_parameters(survey = "baseline", debug = TRUE)
 
 if (pars[["debug"]]) iter <- 1 else iter <- 4000
 
