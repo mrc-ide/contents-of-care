@@ -3,7 +3,6 @@ library(brms)
 
 fits <- map(benin_split, function(x) {
 
-
   insuff_levels <- map(x, ~ length(unique(.))) |> keep(~ . < 2)
   cli_alert_info(
     "Removing variables with insufficient levels: {names(insuff_levels)}"
