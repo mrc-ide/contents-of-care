@@ -31,6 +31,7 @@ orderly_dependency(
 )
 
 drc_split <- readRDS("drc_dco_with_completeness_idx.rds")
+
 cols_to_scale <- grep("scaled", names(drc_split[[1]][[1]]), value = TRUE)
 x <- map_dfr(drc_split, bind_rows, .id = "intervention")
 

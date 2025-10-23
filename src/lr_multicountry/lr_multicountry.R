@@ -24,6 +24,31 @@ orderly_dependency(
 
 multicountry_split <- readRDS("multicountry_split.rds")
 
+cols_to_scale <-
+  grep("scaled", names(multicountry_split[[1]][[1]]), value = TRUE)
+
+x <- map_dfr(multicountry_split, bind_rows, .id = "intervention")
+
+centers <- sapply(cols_to_scale, \(col) mean(x[[col]], na.rm = TRUE))
+scales <- sapply(cols_to_scale, \(col) sd(x[[col]], na.rm = TRUE))
+
+x <- mutate(x, across(all_of(cols_to_scale), \(v) as.numeric(scale(v))))
+
+scaled_attrs <- data.frame(
+  variable = names(centers), center = unname(centers), scale = unname(scales)
+)
+
+saveRDS(scaled_attrs, file = "scaled_attributes.rds")
+orderly_artefact(
+  files = "scaled_attributes.rds",
+  description = "scaled_attributes"
+)
+
+multicountry_split <- split(x, x$intervention) |>
+  map(function(y) split(y, list(y$trimester, y$first_anc), sep = "_"))
+
+
+
 dir.create("fits", showWarnings = FALSE)
 outfiles <- glue("fits/{names(multicountry_split)}_multicountry_fit.rds")
 
