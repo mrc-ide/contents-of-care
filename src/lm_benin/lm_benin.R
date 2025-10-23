@@ -42,7 +42,7 @@ orderly_artefact(
   description = "scaled_attributes"
 )
 
-benin_split <- split(x, list(x$first_anc, x$trimester))
+benin_split <- split(x, list(x$first_anc, x$trimester), sep = "_")
 
 
 factor_vars <- c(
