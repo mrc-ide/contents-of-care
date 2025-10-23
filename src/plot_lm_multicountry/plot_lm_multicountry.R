@@ -29,7 +29,9 @@ names(fits) <- str_remove(infiles, "fits/") |>
 ## Marginal means
 mm_doctor_and_nm <- map_dfr(fits, function(fit) {
 
-  z_grid <- seq(-2, 2, by = 0.5)
+  ##z_grid <- pretty(fit$data$doctor_or_nursing_and_midwifery_scaled, n = 10)
+  ## 95th percentile is less than 1 in all cases
+  z_grid <- seq(-0.5, 1, length.out = 10)
   emm <- emmeans(
     fit,
     ~doctor_or_nursing_and_midwifery_scaled, 
@@ -47,59 +49,35 @@ out <- separate(
   into = c("anc", "trimester"), sep = "_"
 )
 
-
-## Now we need to translate the scaled covariate to its original scale
-orderly_dependency("process_benin", "latest", "benin_scaled_vars_attrs.rds")
-benin_scaled_vars_attrs <- readRDS("benin_scaled_vars_attrs.rds")
-benin_mu <-
-  filter(benin_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
-  pull(mean)
-
-benin_sd <-
-  filter(benin_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
-  pull(sd)
-
-orderly_dependency("process_drc", "latest", "drc_hf_scaled_attrs.rds")
-drc_scaled_vars_attrs <- readRDS("drc_hf_scaled_attrs.rds")
-
-drc_mu <-
-  filter(drc_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
-  pull(mean)
-
-drc_sd <-
-  filter(drc_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
-  pull(sd)
-
-orderly_dependency("process_burkina_faso", "latest", "bfa_hf_scaled_attrs.rds")
-bfa_scaled_vars_attrs <- readRDS("bfa_hf_scaled_attrs.rds")
-
-bfa_mu <-
-  filter(bfa_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
-  pull(mean)
-
-bfa_sd <-
-  filter(bfa_scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery") |>
-  pull(sd)
-
-
-out$original_var <- case_when(
-  out$country %in% "Benin (2010)" ~
-    out$doctor_or_nursing_and_midwifery_scaled * benin_sd + benin_mu,
-  out$country %in% c("Burkina Faso (2013)", "Burkina Faso (2017)") ~
-    out$doctor_or_nursing_and_midwifery_scaled * bfa_sd + bfa_mu,
-  out$country %in% c("DRC (2015)", "DRC (2021)") ~
-    out$doctor_or_nursing_and_midwifery_scaled * drc_sd + drc_mu
+saveRDS(out, file = "multicountry_dco_bayes_mm_doctor_and_nm.rds")
+orderly_artefact(
+  files = "multicountry_dco_bayes_mm_doctor_and_nm.rds",
+  description = "Marginal means for doctor and nursing and midwifery covariate"
 )
 
 
+## Now we need to translate the scaled covariate to its original scale
+orderly_dependency("lm_multicountry", "latest", "scaled_attributes.rds")
+scaled_vars_attrs <- readRDS("scaled_attributes.rds")
+center_used <-
+  filter(scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery_scaled") |>
+  pull(center)
+
+scale_used <-
+  filter(scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery_scaled") |>
+  pull(scale)
+
+out$original_var <- 
+    out$doctor_or_nursing_and_midwifery_scaled * scale_used + center_used
+
 p <- ggplot(out) +
   geom_line(
-    aes(x = doctor_or_nursing_and_midwifery_scaled, y = emmean)
+    aes(x = original_var, y = emmean)
   ) + geom_ribbon(
     aes(
-      x = doctor_or_nursing_and_midwifery_scaled, ymin = lower.HPD,
+      x = original_var, ymin = lower.HPD,
       ymax = upper.HPD
-    ), width = 0, alpha = 0.2
+    ), alpha = 0.2
   ) +
   facet_grid(anc ~ trimester) +
   theme_manuscript() +
@@ -116,8 +94,8 @@ ggsave_manuscript(
 
 
 mm_time_elapsed <- map_dfr(fits, function(fit) {
-  
-  z_grid <- seq(-5, 17, by = 1)
+  ## Choosing the 95th quantile 
+  z_grid <- seq(-2, 9, by = 1)
   emm_ctry <- emmeans(
     fit,
     ~time_elapsed_since_start_of_day,
@@ -134,6 +112,11 @@ out <- separate(
   into = c("anc", "trimester"), sep = "_"
 )
 
+saveRDS(out, file = "multicountry_dco_bayes_mm_time_elapsed.rds")
+orderly_artefact(
+  files = "multicountry_dco_bayes_mm_time_elapsed.rds",
+  description = "Marginal means for time elapsed since start of day"
+)
 
 
 p <- ggplot(out) +
@@ -152,8 +135,8 @@ p <- ggplot(out) +
   ) +
   facet_grid(anc ~ trimester) +
   scale_x_continuous(
-    breaks = c(-5, 0, 6, 12, 17),
-    labels = c("1AM", "6AM", "12PM", "6PM", "11PM")
+    breaks = c(-2, 0, 3, 6, 9),
+    labels = c("4AM", "6AM", "9AM", "12PM", "3PM")
   ) +
   theme_manuscript() +
   ylab("ANC contact length") +

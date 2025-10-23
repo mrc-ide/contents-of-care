@@ -2,13 +2,9 @@ library(broom)
 library(brms)
 library(cli)
 library(dplyr)
-library(ggplot2)
-library(ggpmisc)
-library(glmnet)
 library(glue)
 library(orderly2)
 library(purrr)
-library(rsample)
 library(scales)
 library(snakecase)
 library(tibble)
@@ -20,7 +16,6 @@ pars <- orderly_parameters(debug = TRUE)
 if (pars[["debug"]]) iter <- 100 else iter <- 4000
 
 
-
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
@@ -30,9 +25,34 @@ orderly_dependency(
 )
 
 benin_split <- readRDS("benin_dco_with_completeness_idx.rds")
-names(benin_split[[1]]) <- c("First Trimester",
-                             "Second Trimester",
-                             "Third Trimester")
+
+cols_to_scale <- grep(
+  "scaled", names(benin_split[[1]][[1]][[1]]),
+  value = TRUE
+)
+x <- map_dfr(
+  benin_split, function(y) map_dfr(y, bind_rows),
+  .id = "intervention"
+)
+
+centers <- sapply(cols_to_scale, \(col) mean(x[[col]], na.rm = TRUE))
+scales <- sapply(cols_to_scale, \(col) sd(x[[col]], na.rm = TRUE))
+
+x <- mutate(x, across(all_of(cols_to_scale), \(v) as.numeric(scale(v))))
+
+scaled_attrs <- data.frame(
+  variable = names(centers),
+  center   = unname(centers),
+  scale    = unname(scales)
+)
+
+tmp <- split(x, x$intervention) |>
+  map(function(y) split(y, y$trimester)) 
+
+benin_split <-
+  map_depth(tmp, 2, function(z) split(z, z$first_anc))
+
+
 v1 <- to_snake_case(names(benin_split))
 v2 <- to_snake_case(names(benin_split[[1]]))
 v3 <- to_snake_case(names(benin_split[[1]][[1]]))

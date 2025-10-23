@@ -20,25 +20,8 @@ orderly_dependency("process_benin", "latest", "benin_dco.rds")
 benin_dco <- readRDS("benin_dco.rds")
 
 ## scale consult length here
-x <- scale(benin_dco$consult_length)
+x <- scale(benin_dco$consult_length, center = FALSE, scale = FALSE)
 benin_dco$consult_length_scaled <- x[,1]
-
-scaled_attrs <- data.frame(
-  variable = "consult_length",
-  mean = attr(x, "scaled:center"),
-  sd = attr(x, "scaled:scale")
-)
-
-saveRDS(
-  scaled_attrs,
-  file = "benin_consult_len_scaled_attrs.rds",
-  compress = "xz"
-)
-
-orderly_artefact(
-  files = "benin_consult_len_scaled_attrs.rds",
-  description = "Attributes of scaled variables in Benin DCO"
-)
 
 ## Trimester relevant questions; 
 first_trimester <- select(benin_dco, !(uterus_measured2:sp_ensured3)) |>
@@ -91,9 +74,6 @@ with_completeness_idx <- imap(
 
 
 ## Select covariates; 
-
-
-
 with_completeness_idx <- map_depth(
   with_completeness_idx, 3, function(df) {
     scaled_vars <- grep("scaled", colnames(df), value = TRUE)
