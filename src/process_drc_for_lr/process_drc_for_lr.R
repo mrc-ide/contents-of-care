@@ -25,26 +25,8 @@ drc_dco <- if (pars$survey == "baseline") drc_baseline_dco else drc_endline_dco
 
 
 ## scale consult length here
-x <- scale(drc_dco$consult_length)
+x <- scale(drc_dco$consult_length, center = FALSE, scale = FALSE)
 drc_dco$consult_length_scaled <- x[, 1]
-
-scaled_attrs <- data.frame(
-  variable = "consult_length",
-  mean = attr(x, "scaled:center"),
-  sd = attr(x, "scaled:scale")
-)
-
-outfile <- "drc_consult_len_scaled_attrs.rds"
-saveRDS(
-  scaled_attrs,
-  file = outfile,
-  compress = "xz"
-)
-
-orderly_artefact(
-  files = outfile,
-  description = "Attributes of scaled variables in Drc DCO"
-)
 
 
 ## Unlike Benin DCO, Questions here have not been broken down by trimester

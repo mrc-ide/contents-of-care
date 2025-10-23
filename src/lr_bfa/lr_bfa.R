@@ -2,14 +2,9 @@ library(broom)
 library(brms)
 library(cli)
 library(dplyr)
-library(ggplot2)
-library(ggpmisc)
-library(glmnet)
 library(glue)
 library(orderly2)
 library(purrr)
-library(rsample)
-library(scales)
 library(snakecase)
 library(tibble)
 library(tidylog)
@@ -17,7 +12,7 @@ library(tidyr)
 
 
 
-pars <- orderly_parameters(survey = "baseline", debug = TRUE)
+##pars <- orderly_parameters(survey = "baseline", debug = TRUE)
 
 if (pars[["debug"]]) iter <- 1 else iter <- 4000
 
@@ -33,6 +28,28 @@ orderly_dependency(
 )
 
 bfa_split <- readRDS("bfa_dco_with_completeness_idx.rds")
+
+cols_to_scale <- grep("scaled", names(bfa_split[[1]][[1]]), value = TRUE)
+x <- map_dfr(bfa_split, bind_rows, .id = "intervention")
+
+centers <- sapply(cols_to_scale, \(col) mean(x[[col]], na.rm = TRUE))
+scales <- sapply(cols_to_scale, \(col) sd(x[[col]], na.rm = TRUE))
+
+x <- mutate(x, across(all_of(cols_to_scale), \(v) as.numeric(scale(v))))
+
+scaled_attrs <- data.frame(
+  variable = names(centers), center = unname(centers), scale = unname(scales)
+)
+
+saveRDS(scaled_attrs, file = "scaled_attributes.rds")
+orderly_artefact(
+  files = "scaled_attributes.rds",
+  description = "scaled_attributes"
+)
+
+bfa_split <- split(x, x$intervention) |>
+  map(function(y) split(y, list(y$trimester, y$first_anc), sep = "_"))
+
 
 
 set.seed(42)
