@@ -7,7 +7,7 @@ library(performance)
 library(purrr)
 library(snakecase)
 library(tidyr)
-library(tidylog)
+
 
 orderly_dependency("process_benin", "latest", files = c("benin_split.rds"))
 
@@ -149,15 +149,11 @@ multicountry_split <- map(
       select(bfa_e, all_of(common_cols))
     )
     out$hcw_qualification <- factor(out$hcw_qualification)
-    out$hcw_qualification <- relevel(
-      out$hcw_qualification,
-      ref = "Midwife"
-    )
+    out$hcw_qualification <- relevel(out$hcw_qualification, ref = "Midwife")
 
     out$facility_level_mapping <- factor(out$facility_level_mapping)
     out$facility_level_mapping <- relevel(
-      out$facility_level_mapping,
-      ref = "Primary"
+      out$facility_level_mapping, ref = "Primary"
     )
     out <- na.omit(out)
     

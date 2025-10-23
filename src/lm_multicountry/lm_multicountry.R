@@ -7,7 +7,7 @@ library(performance)
 library(purrr)
 library(snakecase)
 library(tidyr)
-library(tidylog)
+
 
 pars <- orderly_parameters(debug = TRUE, all_countries = TRUE)
 
@@ -33,6 +33,31 @@ if (pars[["all_countries"]]) {
 
 dir.create("fits", showWarnings = FALSE)
 outfiles <- glue("fits/{names(multicountry_split)}_multicountry_fit.rds")
+
+## Scale here; we did a fake scaling in processing individual datasets
+## We want to be able to scale across all countries as that makes more sense
+## So we will do the real scaling here
+cols_to_scale <- grep("scaled", names(split_to_use[[1]]), value = TRUE)
+x <- bind_rows(split_to_use)
+
+centers <- sapply(cols_to_scale, \(col) mean(x[[col]], na.rm = TRUE))
+scales <- sapply(cols_to_scale, \(col) sd(x[[col]], na.rm = TRUE))
+
+x <- mutate(x, across(all_of(cols_to_scale), \(v) as.numeric(scale(v))))
+
+scaled_attrs <- data.frame(
+  variable = names(centers),
+  center   = unname(centers),
+  scale    = unname(scales)
+)
+
+saveRDS(scaled_attrs, file = "scaled_attributes.rds")
+orderly_artefact(
+  files = "scaled_attributes.rds",
+  description = "scaled_attributes"
+)
+
+split_to_use <- split(x, list(x$first_anc, x$trimester), sep = "_")
 
 fits <- walk2(split_to_use, outfiles, function(x, outfile) {
   x <- select(x, -first_anc, -trimester)
