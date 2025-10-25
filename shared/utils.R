@@ -64,35 +64,21 @@ render_p_value_cat <- function(x, ...) {
   label_pvalue()(p)
 }
 
-covariates_nice_names <- c(
-  "consultation_languageFrançais" = "Language: French",
-  "consultation_languageLingala" = "Language: Lingala",
-  "consultation_languageKIKONGO" = "Language: Kikongo",
-  "consultation_languageOther" = "Language: Other",
-  "consultation_languageSwahili" = "Language: Swahili",
-  "hcw_qualificationOther" = "HCW Qualification: Other",
-  "hcw_qualificationMidwife/Obstetrician" =
-    "HCW Qualification: Midwife/Obstetrician",
-  "hcw_qualificationNurse" = "HCW Qualification: Nurse",
-  "hcw_sexMale" = "HCW Sex: Male",
-  "provincekl Kwilu Province" = "Province: Kwilu",
-  "provincemd Maindombe Province" = "Province: Maindombe",
-  "first_pregnancyOui" = "First Pregnancy: Yes",
-  "first_pregnancyNon" = "First Pregnancy: No",
-  "first_pregnancyyes" = "First Pregnancy: Yes",
-  "first_pregnancyno" = "First Pregnancy: No",
-  "pregnancy_in_weeks" = "Length of pregnancy (weeks)",
-  "time_elapsed_since_start_of_day" = "Time elapsed since 6AM (minutes)",
-  "facility_statusPublic" = "Facility Status: Public",
-  "facility_statusPrivate" = "Facility Status: Private",
-  "provinceSouth Kivu" = "Province: South Kivu",
-  "provinceNorth Kivu" = "Province: North Kivu",
-  "provinceManiema" = "Province: Maniema",
-  "provinceKatanga" = "Province: Katanga",
-  "provinceEcuador" = "Province: Ecuador",
-  "milieu_of_residenceUrban" = "Residence: Urban",
-  "milieu_of_residenceRural" = "Residence: Rural"  
-)
+covariates_nice_names <- label_map <- c(
+  "milieu_of_residenceUrban" = "Urban",
+  "milieu_of_residenceUnknown" = "Unknown residence",
+  "facility_level_mappingSecondary" = "Secondary facility",
+  "facility_level_mappingTertiary" = "Tertiary facility",
+  "facility_level_mappingOther" = "Other facility",
+  "doctor_or_nursing_and_midwifery_scaled" = "Doctor/nurse ratio (scaled)",
+  "hcw_sexMale" = "HCW sex:Male",
+  "hcw_sexUnknown" = "HCW sex:Unknown",
+  "hcw_qualificationDoctor" = "Doctor",
+  "hcw_qualificationNurse" = "Nurse",
+  "hcw_qualificationOther" = "HCW qualification:Other",
+  "hcw_qualificationUnknown" = "Unknown qualification",
+  "time_elapsed_since_start_of_day" = "Time since 6AM"
+ )
 
 start_of_day <- lubridate::hm("06:00")
 
