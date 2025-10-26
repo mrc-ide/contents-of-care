@@ -27,7 +27,9 @@ theme_manuscript <- function() {
       legend.title = element_blank(),
       strip.text = element_text(size = 14),
       panel.grid.major.y = element_line(color = "#00000010"),
-      panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
+      ## Default is 5.5 pts
+      panel.spacing = unit(11, "pt")
     )
 }
 
@@ -131,8 +133,8 @@ probability_of_direction <- function(fit) {
 
   # Run brms hypothesis test
   out <- brms::hypothesis(fit, hypotheses)
-  out[[1]]$rowname <- fixed_names
-  out
+  out$hypothesis$rowname <- fixed_names
+  out$hypothesis
 }
 
 intervention_types <- list(
