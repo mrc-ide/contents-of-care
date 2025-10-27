@@ -11,8 +11,6 @@ library(tidylog)
 library(tidyr)
 
 
-
-
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
