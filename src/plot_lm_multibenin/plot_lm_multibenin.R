@@ -1,6 +1,7 @@
 library(bayestestR)
 library(brms)
 library(dplyr)
+library(ggh4x)
 library(ggplot2)
 library(glue)
 library(orderly2)
@@ -27,18 +28,18 @@ drc <- orderly_dependency(
 )
 drc <- readRDS("drc_fits.rds")
 
-drc <- orderly_dependency(
+orderly_dependency(
   "lm_drc_endline", "latest", "drc_endline_fits.rds"
 )
 drc_endline <- readRDS("drc_endline_fits.rds")
 
-bfa_baseline <- orderly_dependency(
+orderly_dependency(
   "lm_burkina_faso_baseline", "latest",
   "bfa_baseline_dco_fits.rds"
 )
 bfa_baseline <- readRDS("bfa_baseline_dco_fits.rds")
 
-bfa_endline <- orderly_dependency(
+orderly_dependency(
   "lm_burkina_faso_endline", "latest",
   "bfa_endline_dco_fits.rds"
 )
@@ -84,9 +85,8 @@ all_pd <-
     .id = "country"
   )
 
-var <- c(
-  "b_time_elapsed_since_start_of_day"
-)
+var <-  "b_time_elapsed_since_start_of_day"
+
 
 xhdi <- filter(all_hdi, Parameter %in% var) |>
   separate(
@@ -102,7 +102,7 @@ ymap <- filter(all_map, Parameter %in% var) |>
     sep = "[_.]"
   )
 
-zpd <- filter(all_pd, Parameter %in% var) |>
+zpd <- filter(all_pd, rowname %in% var) |>
   separate(
     datacut,
     into = c("first_anc", "trimester"),
@@ -144,35 +144,6 @@ ggsave_manuscript(
 )
 
 
-p <- ggplot(zpd) +
-  geom_tile(
-    aes(x = 0.5, y = country, width = 1, height = 0.25),
-    fill = "gray"
-  ) +
-  geom_tile(
-    aes(x = pd / 2, y = country, width = pd, height = 0.25),
-    fill = "red"
-  ) +
-  geom_vline(xintercept = 0.5, linetype = "dashed", alpha = 0.5) +
-  facet_grid(
-    first_anc ~ trimester,
-    scales = "free_x"
-  ) +
-  xlim(0, 1) +
-  xlab("Posterior probability of coefficient > 0") +
-  ylab("") +
-  ggtitle(
-    "Posterior probability that time elapsed since 6AM has a positive effect"
-  ) +
-  theme_manuscript() +
-  theme(axis.title.x = element_text(size = 12))
-
-ggsave_manuscript(
-  "figures/pd_time_elapsed_since_start_of_day.png",
-  p,
-  width = 12,
-  height = 8
-)
 
 #######################################################################
 ## Doctors and N&M per 10k
@@ -194,12 +165,7 @@ ymap <- filter(all_map, Parameter %in% var) |>
     sep = "[_.]"
   )
 
-zpd <- filter(all_pd, Parameter %in% var) |>
-  separate(
-    datacut,
-    into = c("first_anc", "trimester"),
-    sep = "[_.]"
-  )
+
 
 p <- ggplot() +
   geom_vline(xintercept = 0, linetype = "dashed") +
@@ -235,35 +201,6 @@ ggsave_manuscript(
   height = 8
 )
 
-
-p <- ggplot(zpd) +
-  geom_tile(
-    aes(x = 0.5, y = country, width = 1, height = 0.25),
-    fill = "gray"
-  ) +
-  geom_tile(
-    aes(x = pd / 2, y = country, width = pd, height = 0.25),
-    fill = "red"
-  ) +
-  geom_vline(xintercept = 0.5, linetype = "dashed", alpha = 0.5) +
-  facet_grid(
-    first_anc ~ trimester,
-    scales = "free_x"
-  ) +
-  xlim(0, 1) +
-  xlab("Posterior probability of coefficient > 0") +
-  ylab("") +
-  theme_manuscript() +
-  theme(axis.title.x = element_text(size = 12))
-
-ggsave_manuscript(
-  "figures/pd_dnm.png",
-  p,
-  width = 12,
-  height = 8
-)
-
-
 #######################################################################
 # Other variables tracking busyness
 #######################################################################
@@ -276,7 +213,9 @@ vars <- c(
   "b_day_of_visitWeekend",
   "b_pregnant_women_last_year_scaled",
   "b_num_personnel_scaled",
-  "b_num_csps_in_district_scaled"
+  "b_num_csps_in_district_scaled",
+  "b_doctor_or_nursing_and_midwifery_scaled",
+  "b_time_elapsed_since_start_of_day"
 )
 
 xhdi <- filter(all_hdi, Parameter %in% vars)
@@ -354,9 +293,11 @@ p <- p + scale_y_discrete(
     "num_personnel_scaled" = "Number of personnel",
     "pregnant_women_last_year_scaled" = "Pregnant women last year",
     "total_attendance_last_year_scaled" = "Total attendance last year",
-    "total_births_last_year_scaled" = "Total births last year"
+    "total_births_last_year_scaled" = "Total births last year",
+    "doctor_or_nursing_and_midwifery_scaled" = "Doctors/N&M per 10k",
+    "time_elapsed_since_start_of_day" = "Time elapsed since 6AM"
   )
-  )
+)
 
 ggsave_manuscript(
   "figures/map_and_hdi_other_busyness_vars",
@@ -393,8 +334,7 @@ p <- p +
       "Follow-up ANC/Second Trimester",
       "First ANC/Third Trimester",
       "Follow-up ANC/Third Trimester"
-    )
-  ) +
+  )) +
   theme(
     axis.text.x = element_text(
       angle = 90, hjust = 1, vjust = 0.5
@@ -411,7 +351,9 @@ p <- p +
       "num_personnel_scaled" = "Number of personnel",
       "pregnant_women_last_year_scaled" = "Pregnant women last year",
       "total_attendance_last_year_scaled" = "Total attendance last year",
-      "total_births_last_year_scaled" = "Total births last year"
+      "total_births_last_year_scaled" = "Total births last year",
+      "doctor_or_nursing_and_midwifery_scaled" = "Doctors/N&M per 10k",
+      "time_elapsed_since_start_of_day" = "Time elapsed since 6AM"
     )
   ) 
 
