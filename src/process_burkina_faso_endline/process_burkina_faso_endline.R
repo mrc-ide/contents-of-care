@@ -45,7 +45,6 @@ bfa_endline_dco <- rename(
   consult_length = f3_220,
   consultation_language = f3_221,
   ## The following are yes/no questions 1 is yes, 2 is no
-    ## The following are yes/no questions 1 is yes, 2 is no
   hcw_intro_name = f3_202_a,
   hcw_intro_degree = f3_202_b,
   procedure_explained = f3_203_a,
@@ -159,9 +158,15 @@ bfa_endline_dco <- left_join(bfa_endline_dco, hcw_count, by = "SE")
 bfa_endline_dco <- rename(bfa_endline_dco, num_csps_in_district = "EFF")
 bfa_endline_dco <- rename(bfa_endline_dco, num_personnel = "PERSO")
 
+bfa_endline_dco$patients_per_staff_per_year <-
+  bfa_endline_dco$total_attendance_last_year /
+    bfa_endline_dco$doctor_or_nursing_and_midwifery
+
+bfa_endline_dco <-
+  filter(bfa_endline_dco, is.finite(patients_per_staff_per_year))
 
 cols_to_scale <- c(
-  "num_csps_in_district", "num_personnel"
+  "num_csps_in_district", "patients_per_staff_per_year"
 )
 
 scaled_col_names <- paste0(cols_to_scale, "_scaled")
