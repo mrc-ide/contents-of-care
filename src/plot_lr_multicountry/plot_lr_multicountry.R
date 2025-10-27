@@ -27,7 +27,8 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
   cli_inform("Processing {infile}")
   preds <- emmeans(
     fit, ~consult_length_scaled,
-    at = list(consult_length_scaled = seq(-5, 5, 1)),
+    ## capture the 2.5th to 97.5th percentiles of consult length scaled
+    at = list(consult_length_scaled = seq(-0.5, 3, 0.5)),
     type = "response"
   ) |> confint()
 
@@ -55,10 +56,26 @@ marginal_preds$anc <- recode_factor(
   follow_up_anc = "Follow-up ANC"
 )
 
+## Scale consult length back to original units for x-axis labels
+orderly_dependency("lr_multicountry", "latest", "scaled_attributes.rds")
+scaled_attributes <-
+  readRDS("scaled_attributes.rds")
+
+marginal_preds$consult_length <-
+  (marginal_preds$consult_length_scaled *
+  scaled_attributes$scale[scaled_attributes$variable == "consult_length_scaled"]) +
+  scaled_attributes$center[scaled_attributes$variable == "consult_length_scaled"]
+
+saveRDS(marginal_preds, "marginal_consult_length_preds.rds")
+orderly_artefact(
+  description = "Marginal predictions for consultation length",
+  files = "marginal_consult_length_preds.rds"
+)
+
 p <- ggplot(marginal_preds) +
-  geom_line(aes(x = consult_length_scaled, y = prob, col = anc)) +
+  geom_line(aes(x = consult_length, y = prob, col = anc)) +
   geom_ribbon(
-    aes(x = consult_length_scaled, ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc),
+    aes(x = consult_length, ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc),
     alpha = 0.2
   ) +
   facet_grid(
@@ -91,7 +108,7 @@ marginal_preds <- imap_dfr(fits, function(fit, infile) {
   cli_inform("Processing {infile}")
   preds <- emmeans(
     fit, ~doctor_or_nursing_and_midwifery_scaled,
-    at = list(doctor_or_nursing_and_midwifery_scaled = seq(-2, 2, 0.5)),
+    at = list(doctor_or_nursing_and_midwifery_scaled = seq(-0.5, 2, 0.5)),
     type = "response"
   ) |> confint()
 
@@ -119,10 +136,23 @@ marginal_preds$anc <- recode_factor(
   follow_up_anc = "Follow-up ANC"
 )
 
+var <- "doctor_or_nursing_and_midwifery_scaled"
+marginal_preds$doctor_or_nursing_and_midwifery <-
+  (marginal_preds$doctor_or_nursing_and_midwifery_scaled *
+    scaled_attributes$scale[scaled_attributes$variable == var]) +
+  scaled_attributes$center[scaled_attributes$variable == var]
+
+saveRDS(marginal_preds, "marginal_doctor_nursing_midwifery_preds.rds")
+orderly_artefact(
+  description = "Marginal predictions for doctor and nursing/midwifery",
+  files = "marginal_doctor_nursing_midwifery_preds.rds"
+)
+
+
 p <- ggplot(marginal_preds) +
-  geom_line(aes(x = doctor_or_nursing_and_midwifery_scaled, y = prob, col = anc)) +
+  geom_line(aes(x = doctor_or_nursing_and_midwifery, y = prob, col = anc)) +
   geom_ribbon(
-    aes(x = doctor_or_nursing_and_midwifery_scaled,
+    aes(x = doctor_or_nursing_and_midwifery,
         ymin = `lower.HPD`, ymax = `upper.HPD`, fill = anc),
     alpha = 0.2
   ) +
@@ -142,7 +172,7 @@ p <- ggplot(marginal_preds) +
   theme_manuscript()
 p <- p +
   ylab("Proportion of completed steps") +
-  xlab("Doctor/N&M per 10,000 population (scaled)") 
+  xlab("Doctor/N&M per 10,000 population") 
 
 outfile <- "figures/marginal_doctor_nursing_midwifery"
 
@@ -150,14 +180,14 @@ ggsave_manuscript(outfile, p, width = 12, height = 8)
 
 
 ### 3. Time elapsed
-breaks <- seq(-5, 17, 1)
+z_grid <- seq(-2, 9, by = 1)
 
 
 marginal_preds <- imap_dfr(fits, function(fit, infile) {
   cli_inform("Processing {infile}")
   preds <- emmeans(
     fit, ~time_elapsed_since_start_of_day,
-    at = list(time_elapsed_since_start_of_day = breaks),
+    at = list(time_elapsed_since_start_of_day = z_grid),
     type = "response"
   ) |> confint()
 
@@ -185,6 +215,12 @@ marginal_preds$anc <- recode_factor(
   follow_up_anc = "Follow-up ANC"
 )
 
+saveRDS(marginal_preds, "marginal_time_elapsed_since_start_of_day_preds.rds")
+orderly_artefact(
+  description = "Marginal predictions for time elapsed since start of day",
+  files = "marginal_time_elapsed_since_start_of_day_preds.rds"
+)
+
 p <- ggplot(marginal_preds) +
   geom_line(aes(x = time_elapsed_since_start_of_day, y = prob, col = anc)) +
   geom_ribbon(
@@ -195,8 +231,8 @@ p <- ggplot(marginal_preds) +
     alpha = 0.2
   ) +
   scale_x_continuous(
-    breaks = c(-5, 0, 6, 12, 17),
-    labels = c("1AM", "6AM", "12PM", "6PM", "11PM")
+    breaks = c(-2, 0, 3, 6, 9),
+    labels = c("4AM", "6AM", "9AM", "12PM", "3PM")
   ) +
   facet_grid(
     intervention ~ trimester,
