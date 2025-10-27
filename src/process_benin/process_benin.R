@@ -318,7 +318,6 @@ facility_survey_cl <- rename(
 ## Scaling should happen here.
 ## Scale continuous variables before splitting
 cols_to_scale <- c(
-  "total_attendance_last_year",
   ## "new_patients_2009", <- Exclude because 56 NAs
   "anc_visits_last_year",
   "total_births_last_year",
@@ -547,6 +546,20 @@ benin_dco <- left_join(
   by = c("m_id1" = "g_id1"), suffix = c("", "_hw_survey")
 )
 
+## Compute patients seen per staff member per year
+benin_dco$patients_per_staff_per_year <-
+  benin_dco$total_attendance_last_year / benin_dco$doctor_or_nursing_and_midwifery
+
+tmp <- scale(
+  benin_dco$patients_per_staff_per_year,
+  center = FALSE,
+  scale = FALSE
+)
+
+benin_dco$patients_per_staff_per_year_scaled <- tmp[, 1]
+
+scaled_col_names <-
+  c(scaled_col_names, "patients_per_staff_per_year_scaled")
 
 ## Some questions use 1 for yes and 2 for no; recode as 0 for no and 1 for yes
 benin_dco$hf_has_fetoscope <- case_when(
