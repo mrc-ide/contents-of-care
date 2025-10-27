@@ -274,10 +274,8 @@ bfa_hf_survey$catchment_pop <- case_when(
 )
 
 ## Scale
-cols_to_scale <- c(
-  "total_attendance_last_year", "pregnant_women_last_year"
+cols_to_scale <-  "pregnant_women_last_year"
 
-)
 
 scaled_col_names <- c(
   scaled_col_names,
@@ -365,15 +363,33 @@ orderly_artefact(
 
 bfa_baseline_dco <- left_join(bfa_baseline_dco, hcw_count, by = "SE")
 
+## Patients seen per clinical staff per year
+bfa_baseline_dco$patients_per_staff_per_year <-
+  bfa_baseline_dco$total_attendance_last_year /
+  bfa_baseline_dco$doctor_or_nursing_and_midwifery
+
+bfa_baseline_dco <- filter(
+  bfa_baseline_dco,
+  is.finite(patients_per_staff_per_year)
+)
+
+## Scale
+tmp <-
+  scale(
+    bfa_baseline_dco$patients_per_staff_per_year,
+    center = FALSE,
+    scale = FALSE
+  )
+
+bfa_baseline_dco$patients_per_staff_per_year_scaled <- tmp[, 1]
+scaled_col_names <-
+  c(scaled_col_names, "patients_per_staff_per_year_scaled")
+
 saveRDS(bfa_baseline_dco, "bfa_baseline_dco.rds")
 orderly_artefact(
   files = "bfa_baseline_dco.rds",
   description = "DCO for Burkina Faso baseline survey"
 )
-
-
-
-
 
 ## Processing for LM
 bfa_small <- select(

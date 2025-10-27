@@ -26,6 +26,7 @@ orderly_dependency(
 
 bfa_split <- readRDS("bfa_baseline_split.rds")
 cols_to_scale <- grep("scaled", names(bfa_split[[1]]), value = TRUE)
+cli_inform("Scaling columns: {toString(cols_to_scale)}")
 x <- bind_rows(bfa_split)
 
 centers <- sapply(cols_to_scale, \(col) mean(x[[col]], na.rm = TRUE))
