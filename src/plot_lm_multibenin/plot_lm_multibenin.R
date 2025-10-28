@@ -205,7 +205,7 @@ ggsave_manuscript(
 # Other variables tracking busyness
 #######################################################################
 vars <- c(
-  "b_total_attendance_last_year_scaled",
+  "b_patients_per_staff_per_year_scaled",
   "b_anc_visits_last_year_scaled",
   "b_total_births_last_year_scaled",
   "b_anc_contacts_last_week_scaled",
@@ -292,7 +292,7 @@ p <- p + scale_y_discrete(
     "num_csps_in_district_scaled" = "CSPS in district",
     "num_personnel_scaled" = "Number of personnel",
     "pregnant_women_last_year_scaled" = "Pregnant women last year",
-    "total_attendance_last_year_scaled" = "Total attendance last year",
+    "patients_per_staff_per_year_scaled" = "Patients per staff per year",
     "total_births_last_year_scaled" = "Total births last year",
     "doctor_or_nursing_and_midwifery_scaled" = "Doctors/N&M per 10k",
     "time_elapsed_since_start_of_day" = "Time elapsed since 6AM"
@@ -350,7 +350,7 @@ p <- p +
       "num_csps_in_district_scaled" = "CSPS in district",
       "num_personnel_scaled" = "Number of personnel",
       "pregnant_women_last_year_scaled" = "Pregnant women last year",
-      "total_attendance_last_year_scaled" = "Total attendance last year",
+      "patients_per_staff_per_year_scaled" = "Patients per staff per year",
       "total_births_last_year_scaled" = "Total births last year",
       "doctor_or_nursing_and_midwifery_scaled" = "Doctors/N&M per 10k",
       "time_elapsed_since_start_of_day" = "Time elapsed since 6AM"
