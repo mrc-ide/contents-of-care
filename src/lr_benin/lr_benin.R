@@ -94,8 +94,6 @@ fits <- map_depth(benin_split, 3, function(x) {
 })
 
 
-saveRDS(fits, "benin_lr_fits.rds")
-
 orderly_artefact(
   files = glue("{fit_names}.rds"),
   description = "benin_lr_fits.rds"

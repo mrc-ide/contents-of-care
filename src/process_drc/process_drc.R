@@ -637,9 +637,18 @@ drc_baseline_hf <- filter(
   doctor_or_nursing_and_midwifery > 0
 )
 
+drc_baseline_hf$patients_per_staff_per_year <-
+  drc_baseline_hf$total_attendance_last_year /
+    drc_baseline_hf$doctor_or_nursing_and_midwifery
+
+drc_baseline_hf <- filter(
+  drc_baseline_hf,
+  is.finite(patients_per_staff_per_year)
+)
+
 ## Scale
 cols_to_scale <- c(
-  "total_attendance_last_year",
+  "patients_per_staff_per_year",
   "total_births_last_year",
   "maternal_deaths_last_year",
   "pregnant_women_last_year", 
@@ -673,6 +682,8 @@ scaled_col_names[
 drc_baseline_dco_aug <- left_join(
   drc_baseline_dco, drc_baseline_hf, by = "facility_id"
 )
+
+
 
 saveRDS(drc_baseline_dco_aug, "drc_dco_2015_augmented.rds")
 orderly_artefact(
