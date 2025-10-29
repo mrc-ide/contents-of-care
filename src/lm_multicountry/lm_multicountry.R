@@ -9,7 +9,7 @@ library(snakecase)
 library(tidyr)
 
 
-##pars <- orderly_parameters(debug = TRUE, all_countries = TRUE)
+pars <- orderly_parameters(debug = TRUE, all_countries = TRUE)
 
 if (pars[["debug"]]) iter <- 10 else iter <- 8000
 
