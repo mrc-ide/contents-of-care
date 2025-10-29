@@ -13,6 +13,7 @@ dir.create("figures")
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
+
 orderly_dependency("process_benin", "latest", "benin_dco.rds")
 
 orderly_dependency("process_drc", "latest", "drc_dco_2015.rds")
@@ -49,13 +50,15 @@ consult_len <- bind_rows(
   .id = "country"
 )
 
+consult_len <- na.omit(consult_len)
+
 ## Summary tables
-consult_len_summary <- group_by(consult_len, country) |>
+consult_len_summary <- group_by(consult_len, country, trimester, anc) |>
   summarise(
     n = n(),
-    median = median(consult_length, na.rm = TRUE),
     low = quantile(consult_length, 0.25, na.rm = TRUE),
-    high = quantile(consult_length, 0.75, na.rm = TRUE),
+    median = median(consult_length, na.rm = TRUE),
+    high = quantile(consult_length, 0.75, na.rm = TRUE)
   ) |>
   ungroup()
 
@@ -63,39 +66,51 @@ consult_len_summary$label <- glue(
   "{consult_len_summary$median} ({consult_len_summary$low};{consult_len_summary$high})"
 )
 
-p <- ggplot(consult_len) +
+consult_len_summary <- select(
+  consult_len_summary, country, Trimester = trimester, ANC = anc, n,
+  `Median(IQR)` = label
+)
+
+panel_tables <- group_by(consult_len_summary, country) |>
+  nest(tbl = c(Trimester, ANC, n, `Median(IQR)`)) |>
+  ungroup()
+
+p <- ggplot(consult_len, aes(x = trimester, y = consult_length, fill = anc)) +
   geom_half_violin(
-    aes(x = country, y = consult_length, fill = country),
-    side = "r",
-    draw_quantiles = c(0.25, 0.5, 0.75), alpha = 0.5
+    data = subset(consult_len, anc == "First ANC"),
+    side = "l", alpha = 0.5, trim = FALSE, 
+    draw_quantiles = 0.5
   ) +
-  geom_half_point(
-    aes(x = country, y = consult_length, col = country),
-    side = "l", alpha = 0.5
+  geom_half_violin(
+    data = subset(consult_len, anc == "Follow-up ANC"),
+    side = "r", alpha = 0.5, trim = FALSE, draw_quantiles = 0.5
+   
   ) +
-  scale_y_continuous(
-    name = "Consultation length (minutes)",
-    breaks = seq(0, 300, 60)
-  ) +
-  theme_manuscript() +
-  theme(axis.title.x = element_blank()) +
-  ylab("Consultation length (minutes)") 
+  ## geom_table_npc(
+  ##   data = panel_tables, aes(label = tbl, npcx = 0.15, npcy = 0.9),
+  ##   hjust = 1, vjust = 1,
+  ##   table.theme =
+  ##     ttheme_gtminimal(
+  ##       base_size = 7, ##padding = grid::unit(c(1, 1), "char"),
+  ##       core    = list(fg_params = list(hjust = 0, x = 0)),
+  ##       colhead = list(fg_params = list(hjust = 0, x = 0)),
+  ##       rowhead = list(fg_params = list(hjust = 0, x = 0))
+  ##     )
+  ## ) +
+  facet_wrap(~country, ncol = 1, scales = "free_y") +
+  scale_y_continuous(breaks = seq(0, 135, 30), limits = c(0, 135)) +
+  ## max of 99th percentile across all countries is 122.5
+  labs(y = "ANC visit length (minutes)", x = "") +
+  scale_fill_brewer(palette = "Set2", name = "First ANC visit") +
+  theme_manuscript()
 
-out <- select(consult_len_summary, Country = country, `Median (IQR)` = label)
-
-p1 <- p +
-  geom_table_npc(
-    data = out, label = list(out), npcx = 0.11, npcy = 0.9,
-    table.theme =
-      ttheme_gtminimal(base_size = 12, padding = grid::unit(c(1, 1), "char"))
-  ) 
 
 ggsave_manuscript(
-  "figures/consultation_length_by_country", p1, width = 12, height = 8
+  "figures/consultation_length_by_country", p, width = 12, height = 8
 )
 
 
-consult_len <- na.omit(consult_len)
+
 
 p <- ggplot(consult_len) +
   geom_half_violin(
@@ -266,3 +281,15 @@ orderly_artefact(
   files = "figures.zip",
   description = "Figures for manuscript on consultation length"
 )
+
+
+consult_len_summary <- group_by(consult_len, anc, trimester, country) |>
+  summarise(
+    n = n(),
+    median = median(consult_length, na.rm = TRUE),
+    low = quantile(consult_length, 0.25, na.rm = TRUE),
+    high = quantile(consult_length, 0.75, na.rm = TRUE),
+  ) |>
+  ungroup()
+
+

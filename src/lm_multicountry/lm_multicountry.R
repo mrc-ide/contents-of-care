@@ -9,7 +9,7 @@ library(snakecase)
 library(tidyr)
 
 
-pars <- orderly_parameters(debug = TRUE, all_countries = TRUE)
+##pars <- orderly_parameters(debug = TRUE, all_countries = TRUE)
 
 if (pars[["debug"]]) iter <- 10 else iter <- 8000
 
@@ -37,18 +37,24 @@ outfiles <- glue("fits/{names(multicountry_split)}_multicountry_fit.rds")
 ## Scale here; we did a fake scaling in processing individual datasets
 ## We want to be able to scale across all countries as that makes more sense
 ## So we will do the real scaling here
-cols_to_scale <- grep("scaled", names(split_to_use[[1]]), value = TRUE)
-x <- bind_rows(split_to_use)
 
+x <- bind_rows(split_to_use)
+## First set all values greater than threshold to threshold
+threshold <- quantile(x$consult_length, 0.99, na.rm = TRUE)
+x$consult_length <- pmin(x$consult_length, threshold)
+## This involves changing 82 values. Total number of rows is 8128
+## 3 in First, 39 in Second, 40 in Third trimester
+## 45 first ANC, 37 second ANC
+## Benin:4, BFA 2013 17, BFA 2017:15, DRC 2015:37, DRC 2021:9
+
+cols_to_scale <- grep("scaled", names(split_to_use[[1]]), value = TRUE)
 centers <- sapply(cols_to_scale, \(col) mean(x[[col]], na.rm = TRUE))
 scales <- sapply(cols_to_scale, \(col) sd(x[[col]], na.rm = TRUE))
 
 x <- mutate(x, across(all_of(cols_to_scale), \(v) as.numeric(scale(v))))
 
 scaled_attrs <- data.frame(
-  variable = names(centers),
-  center   = unname(centers),
-  scale    = unname(scales)
+  variable = names(centers), center = unname(centers), scale = unname(scales)
 )
 
 saveRDS(scaled_attrs, file = "scaled_attributes.rds")
