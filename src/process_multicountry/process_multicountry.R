@@ -133,17 +133,22 @@ orderly_artefact(
 
 multicountry_split <- map(
   names(bfa_baseline_split), function(stratum) {
-
+    
+    benin <- benin_split[[stratum]]
     drc_b <- drc_baseline_split[[stratum]]
     bfa_b <- bfa_baseline_split[[stratum]]
     bfa_e <- bfa_endline_split[[stratum]]
 
     common_cols <- Reduce(
       intersect,
-      list(colnames(drc_b), colnames(bfa_b), colnames(bfa_e))
+      list(
+        colnames(benin),
+        colnames(drc_b), colnames(bfa_b), colnames(bfa_e)
+      )
     )
     cli_inform("Common columns for {stratum} are: {common_cols}")
     out <- bind_rows(
+      select(benin, all_of(common_cols)),
       select(drc_b, all_of(common_cols)),
       select(bfa_b, all_of(common_cols)),
       select(bfa_e, all_of(common_cols))
@@ -161,10 +166,11 @@ multicountry_split <- map(
   }
 )
 
+outfile <- "minus_drc_endline_split.rds"
 names(multicountry_split) <- names(bfa_baseline_split)
-saveRDS(multicountry_split, "drc_and_bfa_split.rds")
+saveRDS(multicountry_split, outfile)
 
 orderly_artefact(
-  files = "drc_and_bfa_split.rds",
+  files = outfile,
   description = "Combined cleaned datasets from DRC and Burkina Faso only"
 )

@@ -9,7 +9,7 @@ library(snakecase)
 library(tidyr)
 
 
-pars <- orderly_parameters(debug = TRUE, all_countries = TRUE)
+##pars <- orderly_parameters(debug = TRUE, all_countries = TRUE)
 
 if (pars[["debug"]]) iter <- 10 else iter <- 8000
 
@@ -19,16 +19,13 @@ source("utils.R")
 
 orderly_dependency(
   "process_multicountry", "latest",
-  files = c("multicountry_split.rds", "drc_and_bfa_split.rds")
+  files = c("multicountry_split.rds", "minus_drc_endline_split.rds")
 )
 
-multicountry_split <- readRDS("multicountry_split.rds")
-drc_and_bfa_split <- readRDS("drc_and_bfa_split.rds")
-
 if (pars[["all_countries"]]) {
-  split_to_use <- multicountry_split
+  split_to_use <- readRDS("multicountry_split.rds")
 } else {
-  split_to_use <- drc_and_bfa_split
+  split_to_use <- readRDS("minus_drc_endline_split.rds")
 }
 
 dir.create("fits", showWarnings = FALSE)
@@ -39,9 +36,12 @@ outfiles <- glue("fits/{names(multicountry_split)}_multicountry_fit.rds")
 ## So we will do the real scaling here
 
 x <- bind_rows(split_to_use)
+## Remove rows with 0 patients seen
+filter(x, patients_per_staff_per_year_scaled > 1)
 ## First set all values greater than threshold to threshold
 threshold <- quantile(x$consult_length, 0.99, na.rm = TRUE)
 x$consult_length <- pmin(x$consult_length, threshold)
+## For the full dataset
 ## This involves changing 82 values. Total number of rows is 8128
 ## 3 in First, 39 in Second, 40 in Third trimester
 ## 45 first ANC, 37 second ANC
