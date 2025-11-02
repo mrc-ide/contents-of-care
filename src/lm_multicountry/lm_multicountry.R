@@ -29,7 +29,7 @@ if (pars[["all_countries"]]) {
 }
 
 dir.create("fits", showWarnings = FALSE)
-outfiles <- glue("fits/{names(multicountry_split)}_multicountry_fit.rds")
+outfiles <- glue("fits/{names(split_to_use)}_multicountry_fit.rds")
 
 ## Scale here; we did a fake scaling in processing individual datasets
 ## We want to be able to scale across all countries as that makes more sense
