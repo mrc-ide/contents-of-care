@@ -14,12 +14,20 @@ library(stringr)
 library(tibble)
 library(tidyr)
 
+dir.create("figures", showWarnings = FALSE)
+
 orderly_shared_resource(utils.R = "utils.R")
 source("utils.R")
 
+pars <- orderly_parameters(all_countries = FALSE)
+
 orderly_dependency(
-  "lm_multicountry", "latest", "fits/"
+  "lm_multicountry",
+  "latest(parameter:all_countries == this:all_countries)",
+  files = c("scaled_attributes.rds", "fits/")
 )
+
+scaled_vars_attrs <- readRDS("scaled_attributes.rds")
 
 infiles <- list.files("fits", full.names = TRUE)
 
@@ -27,13 +35,128 @@ fits <- map(infiles, readRDS)
 names(fits) <- str_remove(infiles, "fits/") |>
   str_remove("_multicountry_fit.rds") 
 
+obs <- map_dfr(fits, function(fit) fit$data, .id = "datacut")
 
-## Marginal means
+obs$patients_per_staff_per_year_rounded <- round(
+  obs$patients_per_staff_per_year_scaled, 1
+)
+
+obs_mm_patients_per_staff <- obs |>
+  group_by(
+    datacut,
+    patients_per_staff_per_year_rounded
+  ) |>
+  summarise(
+    mean_length = mean(consult_length),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  separate(
+    datacut,
+    into = c("anc", "trimester"),
+    sep = "_"
+  )
+
+z_grid <- seq(-1, 2, length.out = 10)
+mm_patients_per_staff <- map_dfr(fits, function(fit) {
+  
+  emm <- emmeans(
+    fit,
+    ~patients_per_staff_per_year_scaled,
+    at = list(patients_per_staff_per_year_scaled = z_grid),
+    re_formula = NULL, type = "link", frequentist = FALSE,
+    weights = "proportional",
+    epred = TRUE
+  )
+  summary(emm, link = "log", predict.type = "response")
+}, .id = "datacut")
+
+out <- separate(
+  mm_patients_per_staff, datacut,
+  into = c("anc", "trimester"), sep = "_"
+)
+
+var <- "patients_per_staff_per_year_scaled"
+center_used <-
+  filter(scaled_vars_attrs, variable == var) |>
+  pull(center)
+
+scale_used <-
+  filter(scaled_vars_attrs, variable == var) |>
+  pull(scale)
+
+
+out$patients_per_staff_per_year_scaled_original <-
+  out$patients_per_staff_per_year_scaled * scale_used +
+  center_used
+
+obs_mm_patients_per_staff <- filter(
+  obs_mm_patients_per_staff,
+  between(patients_per_staff_per_year_rounded,min(z_grid), max(z_grid))
+)
+
+obs_mm_patients_per_staff$patients_per_staff_per_year_original <-
+  obs_mm_patients_per_staff$patients_per_staff_per_year_rounded * scale_used +
+  center_used
+
+p <- ggplot(out) +
+  geom_line(
+    aes(x = patients_per_staff_per_year_scaled_original, y = emmean)
+  ) +
+  geom_ribbon(
+    aes(
+      x = patients_per_staff_per_year_scaled_original, ymin = lower.HPD,
+      ymax = upper.HPD
+    ),
+    alpha = 0.2
+  ) +
+  facet_grid(anc ~ trimester, scales = "free_y") +
+  theme_manuscript() +
+  ylab("ANC contact length") +
+  xlab("Patients per health staff per year")
+
+
+p <- p + geom_point(
+  data = obs_mm_patients_per_staff,
+  aes(
+    x = patients_per_staff_per_year_original,
+    y = mean_length,
+    size = n
+  ),
+  fill = "red",
+  col = "red",
+  alpha = 0.2
+)
+
+ggsave_manuscript(
+  p,
+  file = "figures/mm_patients_per_staff",
+  width = 12, height = 8
+)
+
+## Marginal means Doctor and Nursing and Midwifery per 10,000 population
+obs$doctor_or_nursing_and_midwifery_scaled_rounded <- round(
+  obs$doctor_or_nursing_and_midwifery_scaled, 1
+)
+obs_mm_doctor_and_nm <- obs |>
+  group_by(
+    datacut,
+    doctor_or_nursing_and_midwifery_scaled_rounded
+  ) |>
+  summarise(
+    mean_length = mean(consult_length),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  separate(
+    datacut,
+    into = c("anc", "trimester"),
+    sep = "_"
+  )
+
+z_grid <- seq(-0.5, 1, length.out = 10)
 mm_doctor_and_nm <- map_dfr(fits, function(fit) {
-
-  ##z_grid <- pretty(fit$data$doctor_or_nursing_and_midwifery_scaled, n = 10)
-  ## 95th percentile is less than 1 in all cases
-  z_grid <- seq(-0.5, 1, length.out = 10)
+ 
   emm <- emmeans(
     fit,
     ~doctor_or_nursing_and_midwifery_scaled, 
@@ -57,20 +180,17 @@ orderly_artefact(
   description = "Marginal means for doctor and nursing and midwifery covariate"
 )
 
-
-## Now we need to translate the scaled covariate to its original scale
-orderly_dependency("lm_multicountry", "latest", "scaled_attributes.rds")
-scaled_vars_attrs <- readRDS("scaled_attributes.rds")
+var <- "doctor_or_nursing_and_midwifery_scaled"
 center_used <-
-  filter(scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery_scaled") |>
+  filter(scaled_vars_attrs, variable == var) |>
   pull(center)
 
 scale_used <-
-  filter(scaled_vars_attrs, variable == "doctor_or_nursing_and_midwifery_scaled") |>
+  filter(scaled_vars_attrs, variable == var) |>
   pull(scale)
 
 out$original_var <- 
-    out$doctor_or_nursing_and_midwifery_scaled * scale_used + center_used
+    out[[var]] * scale_used + center_used
 
 p <- ggplot(out) +
   geom_line(
@@ -81,11 +201,27 @@ p <- ggplot(out) +
       ymax = upper.HPD
     ), alpha = 0.2
   ) +
-  facet_grid(anc ~ trimester) +
+  facet_grid(anc ~ trimester, scales = "free_y") +
   theme_manuscript() +
   ylab("ANC contact length") +
   xlab("Doctors and N&M per 10,000 population (scaled)")
 
+obs_mm_doctor_and_nm <- filter(
+  obs_mm_doctor_and_nm,
+  between(doctor_or_nursing_and_midwifery_scaled_rounded, min(z_grid), max(z_grid))
+)
+
+p <- p + geom_point(
+  data = obs_mm_doctor_and_nm,
+  aes(
+    x = doctor_or_nursing_and_midwifery_scaled_rounded * scale_used + center_used,
+    y = mean_length,
+    size = n
+  ),
+  fill = "red",
+  col = "red",
+  alpha = 0.2
+)
 
 ggsave_manuscript(
   p,
@@ -93,11 +229,33 @@ ggsave_manuscript(
   width = 12, height = 8
 )
 
+## Marginal means time elapsed since start of day
+## Choosing the 2.5th to 95th quantile
+
+obs$time_elapsed_since_start_of_day_rounded <- round(
+  obs$time_elapsed_since_start_of_day, 1
+)
+obs_mm_time_elapsed <- obs |>
+  group_by(
+    datacut,
+    time_elapsed_since_start_of_day_rounded
+  ) |>
+  summarise(
+    mean_length = mean(consult_length),
+    n = n(),
+    .groups = "drop"
+  ) |>
+  separate(
+    datacut,
+    into = c("anc", "trimester"),
+    sep = "_"
+  )
 
 
+
+z_grid <- seq(2, 9, by = 1)
 mm_time_elapsed <- map_dfr(fits, function(fit) {
-  ## Choosing the 95th quantile 
-  z_grid <- seq(-2, 9, by = 1)
+  
   emm_ctry <- emmeans(
     fit,
     ~time_elapsed_since_start_of_day,
@@ -135,14 +293,31 @@ p <- ggplot(out) +
     ),
     alpha = 0.2
   ) +
-  facet_grid(anc ~ trimester) +
+  facet_grid(anc ~ trimester, scales = "free_y") +
   scale_x_continuous(
-    breaks = c(-2, 0, 3, 6, 9),
-    labels = c("4AM", "6AM", "9AM", "12PM", "3PM")
+    breaks = c(2, 4, 6, 8),
+    labels = c("8AM", "10AM", "12PM", "2PM")
   ) +
   theme_manuscript() +
   ylab("ANC contact length") +
   xlab("")
+
+obs_mm_time_elapsed <- filter(
+  obs_mm_time_elapsed,
+  between(time_elapsed_since_start_of_day_rounded, min(z_grid), max(z_grid))
+)
+
+p <- p + geom_point(
+  data = obs_mm_time_elapsed,
+  aes(
+    x = time_elapsed_since_start_of_day_rounded,
+    y = mean_length,
+    size = n
+  ),
+  fill = "red",
+  col = "red",
+  alpha = 0.2
+)
 
 
 ggsave_manuscript(
